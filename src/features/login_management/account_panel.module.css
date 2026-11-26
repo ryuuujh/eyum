@@ -1,0 +1,68 @@
+.form, .details {
+  max-width: 25rem;
+  margin: var(--space_4) 0 0;
+}
+
+.form, .field {
+  display: grid;
+  gap: var(--space_3);
+}
+
+.field {
+  gap: var(--space_1);
+  font-weight: 600;
+}
+
+.field input {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: var(--space_2) var(--space_3);
+  border: 1px solid var(--color_border);
+  border-radius: var(--radius_control);
+  color: var(--color_text);
+  background: var(--color_surface);
+  font-weight: 400;
+}
+
+.button {
+  justify-self: start;
+  min-height: 2.75rem;
+  margin-top: var(--space_2);
+  padding: var(--space_2) var(--space_4);
+  border: 0;
+  border-radius: var(--radius_control);
+  color: var(--color_surface);
+  background: var(--color_primary);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.button:disabled {
+  opacity: .7;
+  cursor: wait;
+}
+
+.error {
+  color: #9a3029;
+}
+
+.details > div {
+  display: grid;
+  grid-template-columns: 4rem minmax(0, 1fr);
+  gap: var(--space_3);
+  padding: var(--space_2) 0;
+}
+
+.details > div + div {
+  border-top: 1px solid var(--color_border);
+}
+
+.details dt {
+  color: var(--color_muted);
+}
+
+.details dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-weight: 600;
+}

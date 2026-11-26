@@ -1,0 +1,23 @@
+# 로컬 환경과 인증 정보
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+# npm / Next.js / TypeScript
+node_modules/
+.next/
+out/
+coverage/
+next-env.d.ts
+*.tsbuildinfo
+*.log
+# 로컬 도구·임시 자료
+.DS_Store
+Thumbs.db
+.vercel/
+supabase/.temp/
+supabase/.branches/
+/private_data/
+/uploads/
+/db_backups/

@@ -1,0 +1,212 @@
+.hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  min-height: clamp(14.5rem, 22vw, 18rem);
+  padding: clamp(1.5rem, 4vw, 3rem);
+  margin-bottom: var(--space_5);
+  border-radius: var(--radius_card);
+  background: linear-gradient(105deg, #eaf4ff, #e4f2f4 64%, #e3f4ed);
+}
+
+.hero::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0 0 0 26%;
+  content: "";
+  background: url("/images/export_overview.webp") right center / cover no-repeat;
+  mask-image: linear-gradient(to right, transparent, black 34%);
+}
+
+.hero h1 {
+  color: var(--color_text);
+  font-size: clamp(2.1rem, 3.8vw, 3.4rem);
+  font-weight: 750;
+  line-height: 1.15;
+  letter-spacing: -.055em;
+}
+
+.hero p {
+  max-width: 47%;
+  margin-top: var(--space_3);
+  color: var(--color_muted);
+  font-size: 1rem;
+  word-break: keep-all;
+}
+
+.hero_action {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space_3);
+  min-height: 2.75rem;
+  margin-top: var(--space_6);
+  padding-inline: var(--space_4);
+  border-radius: .75rem;
+  background: var(--color_primary);
+  color: var(--color_surface);
+  font-size: .875rem;
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.hero_action:hover {
+  background: color-mix(in srgb, var(--color_primary) 88%, black);
+}
+
+.arrow {
+  font-size: 1.125rem;
+  line-height: 1;
+}
+
+.panel_grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(15rem, 1fr);
+  gap: var(--space_5);
+}
+
+.task_grid, .product_links {
+  display: grid;
+  padding: 0;
+  margin: var(--space_4) 0 0;
+  list-style: none;
+}
+
+.task_grid {
+  grid-template-columns: repeat(auto-fit, minmax(5.5rem, 1fr));
+  gap: var(--space_2);
+}
+
+.task_link, .product_links a {
+  display: flex;
+  align-items: center;
+  min-height: 2.75rem;
+  color: var(--color_text);
+  text-decoration: none;
+  font-size: .875rem;
+  font-weight: 600;
+}
+
+.task_link {
+  height: 100%;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space_3);
+  padding: var(--space_4) .25rem;
+  border: 1px solid var(--color_border);
+  border-radius: .875rem;
+  text-align: center;
+  word-break: keep-all;
+}
+
+.task_link:hover, .product_links a:hover {
+  background: var(--color_primary_tint);
+  color: var(--color_primary);
+}
+
+.icon_tile {
+  display: inline-grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex: none;
+  place-items: center;
+  border-radius: .75rem;
+  color: var(--color_primary);
+  background: var(--color_primary_tint);
+}
+
+.icon_tile svg {
+  width: 1.3rem;
+  height: 1.3rem;
+}
+
+.icon_tile[data-icon="regulations"], .icon_tile[data-icon="accessories"] {
+  color: var(--color_info);
+  background: var(--color_info_tint);
+}
+
+.icon_tile[data-icon="labels"] {
+  color: #80549e;
+  background: #f5edfa;
+}
+
+.icon_tile[data-icon="export_declaration"] {
+  color: #a45d27;
+  background: #fff1e6;
+}
+
+.icon_tile[data-icon="certificates"] {
+  color: #555eaa;
+  background: #eef0ff;
+}
+
+.product_links li + li {
+  border-top: 1px solid var(--color_border);
+}
+
+.product_links a {
+  gap: var(--space_3);
+  padding: var(--space_2) .25rem;
+}
+
+.product_links .icon_tile {
+  width: 2.125rem;
+  height: 2.125rem;
+  border-radius: .625rem;
+}
+
+.chevron {
+  width: .45rem;
+  height: .45rem;
+  margin-inline: auto .35rem;
+  border: solid var(--color_muted);
+  border-width: 1.5px 1.5px 0 0;
+  transform: rotate(45deg);
+}
+
+@media (max-width: 62rem) {
+  .panel_grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 38rem) {
+  .hero {
+    min-height: 13rem;
+    padding: var(--space_5);
+  }
+
+  .hero::before {
+    left: 20%;
+    mask-image: linear-gradient(to right, transparent 8%, rgb(0 0 0 / 12%) 35%, black 88%);
+  }
+
+  .hero p {
+    max-width: 65%;
+    font-size: .875rem;
+  }
+
+  .task_grid {
+    grid-template-columns: repeat(auto-fit, minmax(4.75rem, 1fr));
+  }
+}
+
+@media (max-width: 30rem) {
+  .hero {
+    min-height: 16rem;
+    justify-content: flex-start;
+  }
+
+  .hero::before {
+    inset: 38% -5% 0 0;
+    background-position: right 58%;
+    mask-image: linear-gradient(to bottom, transparent, black 42%);
+  }
+
+  .hero p {
+    max-width: 100%;
+  }
+}
