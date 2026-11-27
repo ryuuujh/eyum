@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { FeatureScreen, type WorkspacePageProps } from '@/components/feature_screen';
 import { AccessoryList } from '@/features/accessories/components/accessory_list';
+import { HsDataBanner } from '@/features/products/hs_data_banner';
 import { ExportToggle } from './export_toggle';
 import { ui } from '@/components/ui';
 import { get_product_detail, get_products } from '@/features/products/data';
@@ -23,6 +24,7 @@ export default async function ProductsPage({ searchParams }: WorkspacePageProps)
   return (
     <FeatureScreen slug="products" searchParams={searchParams}>
     <main className={ui.page}>
+      <HsDataBanner />
       <div className="mb-6 flex items-center justify-end">
         <Link href="/products/new" className={ui.btnPrimary}>+ 새 제품 등록</Link>
       </div>

@@ -74,3 +74,26 @@
 - **요청:** 남은 3번(공식 HS 코드표) · 4번(제품 · 부속물품 통로 칸 맞추기).
 - **반영 파일:** `scripts/build_hs_official_sql.py`(관세청 엑셀 2개 → HS 코드표 SQL, 같은 파일이면 건너뜀. 만든 SQL은 약 20MB라 Git 제외), `src/features/products/share.ts`(상세 · 목록에 item_type 'food' · item_id), `src/features/accessories/document_fields.ts`(item_type 'accessory' · item_id · name_ko · option_name · for · external · summary · packs — 제품과 같은 모양), `src/features/accessories/feature_notes.md`(칸 이름 대응표).
 - **판단:** 칸 이름 자체는 바꾸지 않고(이미 쓰는 곳 보호) 공통 머리 · packs로 맞춤. 식품 HS 검색은 글자 일치만이라 "떡" → 떡갈잎 · 떡밥만 나옴 → 별칭 사전 또는 AI 검색어(GPT 설계, OpenAI 승인 필요) 결정 대기.
+
+## 2026-11-27 / 공식 HS 데이터 반자동 갱신 연결 준비
+
+- **요청:** GPT가 설계 중인 공식 HS 데이터 반자동 갱신(관세청 HSK 주 1회 · 표준품명 월 1회 메타데이터 확인 → 알림 → 담당자가 새 파일 올림 → 검증 · 비교 → 승인 → 영향 품목만 재검토)을 지금 코드에 잇기. GPT가 줄 핵심 기능(변경 확인 · 파일 검증 · 비교 · 버전 적용)은 중복 개발하지 말고 연결 구조만 준비.
+- **반영 파일:** 마이그레이션 `20261127000200_hs_data_update_links.sql`(알림 표 `hs_data_notices` + `record_hs_data_notice` · `resolve_hs_data_notice`, HS를 쓰는 품목 `hs_items_in_use`, 바뀐 부호 → 영향 품목 `hs_items_affected`, 재검토 전환 `mark_hs_item_for_review` · `mark_hs_items_for_review`, 화면용 `hs_data_action`), `supabase/local_only/hs_data_screen_permissions.sql`, `scripts/build_hs_official_sql.py`(`--stage-only`: 새 버전을 켜지 않고 넣기만, 빈 영문명 정리를 새 버전에만), `src/features/products/hs_data.ts` · `hs_data_actions.ts` · `hs_data_banner.tsx`, 화면 `/products/hs_data`(임시), 제품 목록 위 알림 줄.
+- **판단:** 서비스 공통 알림 기능은 아직 없음(검색 결과 없음) → 공통 알림을 새로 만들지 않고 HS 전용 알림 표만 둠. 나중에 공통 알림이 생기면 옮기기 쉽게 종류 · 메시지 · 상세 · 읽음 · 처리 칸을 나눔. 검토 이력이 없는 직접 입력 HS도 영향 품목에 넣고, 이 경우 field_status만 재검토 필요로 바꿈. 확정 HS 값 · 확정자 · 확정일 · 이력은 바꾸지 않음. 식품은 제품 단위, 부속물품은 옵션 단위, 보관한 것은 제외.
+- **남은 질문:** GPT에 요청할 인터페이스는 프로젝트 파일 `hs-update/GPT요청_반자동갱신_연결.md`.
+- **추가(채주현):** 알림을 홈 탭에서도 보이게 → 홈이 DB를 직접 읽지 않고 받아 가는 통로 `GET /api/products/notices(?all=1)`(`src/features/products/notice_passage.ts`). 응답 모양 `{ available, unresolved, notices: [{ id, source_tab, kind, title, message, detected_at, state: unread|read|resolved, link }] }` — 다른 탭 알림도 같은 모양이면 홈이 한 번에 모음. 공통 알림 기능은 만들지 않음, 홈 화면 연결은 홈 담당.
+
+## 2026-11-27 / GPT 반자동 갱신 코드 합치기
+
+- **요청:** GPT가 보낸 반자동 갱신 코드(확인 기록 · 업로드 검증 · 비교 · 승인)를 넣고, GPT가 요청한 최신 파일(0200 연결부 · `--stage-only` 스크립트 · `/products/hs_data` 화면과 안전장치 모듈) 보내기.
+- **반영 파일(GPT):** 마이그레이션 `20261127000300_hs_data_refresh.sql`(`hs_data_checks` · `hs_data_approvals` · `compare_hs_data_versions` · `approve_hs_data_update`), `scripts/hs_metadata_check.py` · `hs_stage_upload.py` · `hs_refresh_service.py`(서버 작업자, psycopg 3 · openpyxl, 환경 변수 `HS_REFRESH_DATABASE_URL`), `tests/test_hs_metadata_check.py`.
+- **Claude가 고친 것:** ① 알림 문구를 한국어로(화면에 그대로 나옴) ② `hs_data_approvals.notice_id`에 알림 표 외래키 ③ 추가된 부호도 재검토 후보에 넣음 — 6자리만 확정한 품목은 그 아래 새 10자리가 생기면 다시 골라야 할 수 있어서(실제 판단은 `hs_items_affected`가 함, 10자리 확정 품목은 영향 없음) ④ `build_hs_official_sql.py`도 HSK에 없는 표준품명 부호가 있으면 건너뛰지 않고 전체 중단(업로드 검증과 같은 규칙).
+- **판단:** 화면의 업로드 · 비교 · 승인 버튼은 아직 안 붙임. 작업자가 Python이라 Next 서버에서 어떻게 부를지(로컬 프로세스 / 별도 작업 서비스)와 로그인 뒤 승인 권한이 정해져야 함. 정기 실행은 하루 한 번 `python scripts/hs_metadata_check.py`(배포 서버 미정).
+- **추가(채주현):** 파이썬 실행 때 생기는 `scripts/__pycache__` 때문에 pull이 막힘 → 스크립트 4개 맨 위에 `sys.dont_write_bytecode = True`(폴더를 만들지 않음) + `.gitignore`에 `__pycache__/` · `*.pyc` 3줄 추가(공통 파일이라 PR에 적음).
+
+## 2026-11-27 / HS 데이터 갱신 화면 연결
+
+- **요청:** `/products/hs_data`에 수동 확인 → 공식 엑셀 올리기 → 바뀐 내용 · 영향 품목 → 승인 연결, 독립 DB로 화면 전체 흐름 시험(같은 파일 = 변경 없음, 승인 실패 시 기존 버전 유지, 표준품명만 · HSK만 변경). 그다음 정기 실행. 팀 DB와 승인 공개는 권한 확정 뒤.
+- **반영 파일:** `scripts/hs_refresh_cli.py`(Next 서버가 부르는 입구, JSON 입출력, 올린 파일 이름을 버전 정보에 기록), `src/features/products/hs_refresh.ts`(작업자 실행 · 안전장치 · 비교 결과 해시 · 오류 한국어), `src/app/products/hs_data/upload/route.ts`(엑셀 받기 — 서버 액션 1MB 제한 때문에 일반 요청 처리기, 임시 폴더 처리 후 삭제), `hs_data_actions.ts`(지금 확인 · 승인), `page.tsx`(확인 · 갱신 칸, 비교 상자, 승인 기록), `scripts/run_hs_check.ps1` · `register_hs_check_task.ps1`(정기 확인 스크립트).
+- **판단:** 승인 직전에 다시 비교해 화면에서 본 결과와 다르면 막음. 갱신 기능은 로컬 Supabase + 비운영 + `HS_REFRESH_DATABASE_URL`일 때만 켜짐(권한 정해지면 권한 검사로 교체). 작업자에게는 필요한 환경 변수만 넘김(AI 키 안 넘김). 정기 확인은 하루 한 번 실행하고 간격(HSK 7일 · 표준품명 한 달)은 DB가 판단.
+- **채주현 결정:** PC 작업 스케줄러에는 등록하지 않음. 스크립트만 두고 배포 서버가 정해지면 그쪽 정기 실행으로.

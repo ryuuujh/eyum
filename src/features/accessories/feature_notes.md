@@ -42,6 +42,17 @@
 - `fields[].field` 이름이 다른 것 (상태 · usable을 볼 때): 개당 중량 제품 `unit_gross_g` ↔ 부속물품 `unit_weight_g`, 원산지 제품 `finished_country`(완제품 제조국) ↔ `origin`, CTN 크기 제품 `ctn_size`(한 칸) ↔ `ctn_l_cm` · `ctn_w_cm` · `ctn_h_cm`, 영문명 제품 `name_en` ↔ `item_name_en`. HS(`hs6` · `hsk10`) · CTN(`units_per_ctn` · `ctn_net_kg` · `ctn_gross_kg`) · 가액(`unit_price` · `currency`)은 같은 이름.
 - 목록: 제품 `GET /api/products?selected=1`은 가벼운 목록(code · item_id), 부속물품 `GET /api/accessories?selected=1`은 상세 배열.
 
+## 공식 HS 데이터 반자동 갱신과 잇는 곳 (11/27)
+
+- 마이그레이션 `20261127000200_hs_data_update_links.sql`. 식품 · 부속물품이 같은 공식 데이터를 쓰므로 둘 다 대상.
+- GPT 적용 함수가 새 버전을 켠 **같은 트랜잭션 안에서** `mark_hs_items_for_review(바뀐 부호[], 사유)`와 `resolve_hs_data_notice(알림, 'applied', 승인자, 새 버전)`를 부른다.
+- 영향 판단: 품목 부호(hsk10, 없으면 hs6)가 바뀐 부호로 시작하면 영향. 6자리만 확정한 품목은 그 아래 10자리가 바뀌어도 영향. 검토 이력 없는 직접 입력도 포함.
+- 재검토 전환: 이력이 있으면 `mark_hs_classification_for_review`, 없으면 field_status만 needs_check. HS 값 · 확정자 · 확정일 · 이력은 그대로.
+- 알림: `record_hs_data_notice(데이터, 종류, change_key, 메시지, 상세)` — 같은 change_key는 한 번만.
+- 홈 탭용 알림 통로: `GET /api/products/notices(?all=1)` (`src/features/products/notice_passage.ts`의 `TabNotice` 모양).
+- GPT 작업자(11/27 합침): 마이그레이션 `20261127000300_hs_data_refresh.sql`, `scripts/hs_metadata_check.py`(하루 한 번 실행, HSK 7일 · 표준품명 한 달 간격), `hs_stage_upload.py`(엑셀 검증 · 승인 전 버전 만들기), `hs_refresh_service.py`(`check_now` · `upload` · `compare` · `approve` · `resolve_no_change` · `history`). Python 3 + psycopg 3 + openpyxl, `HS_REFRESH_DATABASE_URL`. 화면 연결 전.
+- 새 파일을 켜지 않고 넣기만: `python scripts/build_hs_official_sql.py HSK.xlsx 표준품명.xlsx --stage-only`
+
 ## 남은 일
 
 - 식품 HS 검색이 약함("떡" → 떡갈잎 · 떡밥): 별칭 사전(`hs_search_aliases`) 채우기 또는 AI 검색어(OpenAI 승인 필요) 중 결정.

@@ -21,3 +21,6 @@ supabase/.branches/
 /private_data/
 /uploads/
 /db_backups/
+# Python (HS 데이터 갱신 스크립트)
+__pycache__/
+*.pyc
