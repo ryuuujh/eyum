@@ -43,3 +43,7 @@
   - `to_rows`로 만든 값을 `save_product`에 넣음: 새 제품(포장 크기 · CTN 크기 · 통화 · 교차접촉 · 외박스 라벨 문구) 저장 → 상태 pack_size · ctn_size · currency · cross_contact 모두 확인됨. 또떡EZ 수정(기한 종류) 후 수출 체크 true 유지, 라벨 문구 5줄 유지.
   - 통로(예시 데이터 모드): `list_shared_products({ selected: true })` → 체크한 또떡EZ만. 서류 통로 HS `value` 1902.30 / `raw` "190230", HSK `value` 1902.30-9000 / `raw` "1902309000", CTN 크기 `raw` { l: 45, w: 30, h: null, unit: "cm" }. external=1이면 제조원 라벨 문구 · 단가 빠짐.
 - **미검증 범위:** 채주현 PC 로컬 Supabase에서 새 마이그레이션 다시 적용 · check-db, 브라우저에서 체크 상자 · 라벨 문구 입력 누르기, 엑셀 내려받기에 새 칸이 어떻게 보이는지.
+
+## 2026-11-27 / 라벨 담당 요청 반영
+
+- **수행 방법 / 결과 (클라우드 작업 사본):** typecheck · lint · build 통과. 원재료 줄 "쌀(미국산) / Rice", 하위 원료 "  고춧가루(중국산) / Red pepper powder" 읽기 · 다시 쓰기 같음. 또떡EZ 떡 원재료에 영문명만 붙여 저장 → 원재료 상태 바뀌지 않음. 빈 PostgreSQL에 전체 마이그레이션(GPT 포함) + seed 적용 후 save_product로 name_en 저장 · 다시 읽기 통과, production_date 라벨 문구 저장 통과. 가상 제품으로 라벨 통로(external=1) 응답 생성: 제조원 라벨 문구 빠짐, packs.outer.label_area_mm 나옴.

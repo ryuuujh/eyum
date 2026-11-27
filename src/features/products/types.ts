@@ -61,6 +61,7 @@ export interface Product {
   claims: string | null;
   pack_w_mm: number | null; pack_d_mm: number | null; pack_h_mm: number | null;
   label_w_mm: number | null; label_h_mm: number | null;
+  outer_label_w_mm: number | null; outer_label_h_mm: number | null;   // 외박스 라벨 부착 면적
   export_selected: boolean;           // 다른 탭(서류 등)으로 넘길 수출 제품인지 (목록 · 상세에서 체크)
   status: ProductStatus;
   created_at: string;
@@ -106,6 +107,7 @@ export interface Ingredient {
   parent_id: string | null;
   seq: number;
   name: string;
+  name_en: string | null;   // 영문 원재료명 (선택)
   origin: string | null;
   is_organic: boolean;
   is_additive: boolean;
@@ -138,7 +140,7 @@ export type LabelPackLevel = 'unit' | 'outer';   // 개별포장 · 외박스
 export const LABEL_PACK_LABEL: Record<LabelPackLevel, string> = { unit: '개별포장', outer: '외박스' };
 export const LABEL_ITEMS = {
   product_name: '제품명', net_weight: '내용량', ingredients: '원재료', allergens: '알레르기', instructions: '조리 · 사용 방법',
-  storage: '보관 방법', precaution: '주의 문구', date: '제조일 · 기한', origin: '원산지', nutrition: '영양성분',
+  storage: '보관 방법', precaution: '주의 문구', production_date: '제조일', expiry_date: '소비기한 · 품질유지기한', origin: '원산지', nutrition: '영양성분',
   manufacturer: '제조원', exporter: '수출자', importer: '수입자', other: '기타',
 } as const;
 export type LabelItemKey = keyof typeof LABEL_ITEMS;

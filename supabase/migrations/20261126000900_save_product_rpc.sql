@@ -23,7 +23,8 @@ begin
     gtin = excluded.gtin, halal = excluded.halal, storage_text = excluded.storage_text, cooking_en = excluded.cooking_en,
     caution_en = excluded.caution_en, claims = excluded.claims,
     pack_w_mm = excluded.pack_w_mm, pack_d_mm = excluded.pack_d_mm, pack_h_mm = excluded.pack_h_mm,
-    label_w_mm = excluded.label_w_mm, label_h_mm = excluded.label_h_mm, status = excluded.status;
+    label_w_mm = excluded.label_w_mm, label_h_mm = excluded.label_h_mm,
+    outer_label_w_mm = excluded.outer_label_w_mm, outer_label_h_mm = excluded.outer_label_h_mm, status = excluded.status;
 
   -- 2. 구성품 (다른 제품과 같이 쓰는 구성품이면 그 제품에도 반영됨)
   insert into components

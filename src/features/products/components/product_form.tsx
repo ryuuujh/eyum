@@ -226,7 +226,8 @@ export function ProductForm({ initial, hints: initialHints, library = [], initia
                     </Field>
                   ) : <div />}
                   <Field label="원재료 (한 줄에 하나, 라벨 순서대로)" span={3}>
-                    <textarea rows={4} className={`${input} font-mono`} value={c.ingredients} placeholder={'쌀(미국산)\n소금\n구연산 · INS 330 · 산도조절제'} onChange={(e) => set_c(i, { ingredients: e.target.value })} />
+                    <textarea rows={4} className={`${input} font-mono`} value={c.ingredients} placeholder={'쌀(미국산) / Rice\n소금\n구연산 · INS 330 · 산도조절제'} onChange={(e) => set_c(i, { ingredients: e.target.value })} />
+                    <p className="mt-1 text-xs text-slate-500">영문 원재료명은 선택이에요. 이름 뒤에 &quot; / Rice&quot;처럼 적어요. 하위 원료는 앞에 칸을 띄우거나 &quot;-&quot;로 시작해요.</p>
                     <Under entity="component" id={c.id} k="ingredients" value={c.ingredients} />
                   </Field>
                   <Field label="동물성 원료">
@@ -338,6 +339,11 @@ export function ProductForm({ initial, hints: initialHints, library = [], initia
                 {(['label_w_mm', 'label_h_mm'] as const).map((k) => <input key={k} className={input} inputMode="decimal" value={f.p[k]} onChange={(e) => set_p(k, e.target.value)} />)}
               </div>
               <Under entity="product" id={f.id} k="label_size" value={composite_text(f.p, 'label_size')} />
+            </Field>
+            <Field label="외박스 라벨 부착 면적 (가로 × 세로 mm)" optional>
+              <div className="flex gap-2">
+                {(['outer_label_w_mm', 'outer_label_h_mm'] as const).map((k) => <input key={k} className={input} inputMode="decimal" value={f.p[k]} onChange={(e) => set_p(k, e.target.value)} />)}
+              </div>
             </Field>
             <div className="sm:col-span-3">
               <div className="mb-1 text-sm font-medium text-slate-700">기존 라벨 문구 <span className="font-normal text-slate-400">(선택)</span></div>

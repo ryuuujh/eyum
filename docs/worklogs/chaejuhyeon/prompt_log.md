@@ -45,3 +45,10 @@
   - 그 밖에: `form.ts` · `view.ts` · `apply_changes.ts`(묶은 칸 다시 올리기) · `data.ts` · `sample.ts` · `persist.ts` · `save.ts` · `types.ts`, 새 파일 `src/app/products/export_toggle.tsx`.
 - **판단:** 수출 체크는 나라와 상관없이 제품마다 하나(제품 화면은 국가 선택 없음, 11/25 결정). 라벨 문구는 원문 보관용이라 확인 상태를 두지 않음. 새 칸이 할 일에 들어가서 제품마다 할 일 개수가 늘어남.
 - **남은 질문:** 나라별로 다른 제품을 고를 필요가 있는지(서류 담당), 유니패스 HS 표기 형식(서류 담당), 라벨 문구 항목 구분이 라벨 명세와 맞는지(라벨 담당).
+
+## 2026-11-27 / 라벨 담당 요청 반영 (영문 원재료명 · 제조일/기한 · 외박스 라벨 면적 · 영양 원본)
+
+- **요청:** 라벨 담당(박진혁) 회신 — ① 영문 원재료명(선택, 하위 원료 포함) ② 제조사 표기 의무는 규제 담당과 확인 후 라벨 탭이 경고 ③ 라벨 문구 date를 제조일 · 기한으로 구분 ④ 구성품 봉 수 전달 여부, 외박스 라벨 부착 면적 ⑤ 영양 항목명 · 단위 · 원본 기준량과 계산값 구분. 라벨 탭 응답 예시(가상 데이터) 요청.
+- **반영 파일:** `20261126000100_product_core.sql`(component_ingredients.name_en, products.outer_label_w_mm · outer_label_h_mm, 라벨 문구 item_key production_date · expiry_date), `20261126000900_save_product_rpc.sql`, `types.ts`, `fields.ts`(outer_label_size 선택 칸), `form.ts`(원재료 줄 " / 영문명" 읽기 · 쓰기, 영문명만 바뀌면 상태 유지), `share.ts`(ingredients[].name_en, components[].nutrition 원본, nutrition_items, packs.outer.label_area_mm), `sample.ts`, `product_form.tsx`.
+- **판단:** 봉 수는 이미 `components[].quantity`로 넘어감. 제조사 표기 의무는 제품 탭에서 바꿀 것 없음. 영양 반올림 · 표시 단위는 라벨 탭 몫.
+- **남은 질문:** 없음. 가상 예시 JSON은 프로젝트 파일 `label-sample/`에 둠(저장소에는 넣지 않음).

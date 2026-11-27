@@ -36,7 +36,8 @@ create table products (
   caution_en         text,
   claims             text,                         -- 포장 강조 문구 · 인증 마크
   pack_w_mm          numeric, pack_d_mm numeric, pack_h_mm numeric,
-  label_w_mm         numeric, label_h_mm numeric,  -- 라벨 부착 가능 면적
+  label_w_mm         numeric, label_h_mm numeric,  -- 라벨 부착 가능 면적 (개별포장)
+  outer_label_w_mm   numeric, outer_label_h_mm numeric,  -- 외박스 라벨 부착 가능 면적
   export_selected    boolean not null default false,  -- 수출할 제품 체크 (다른 탭은 /api/products?selected=1로 고름)
   status             text not null default 'draft' check (status in ('draft', 'active', 'archived')),
   created_at         timestamptz not null default now(),
@@ -91,6 +92,7 @@ create table component_ingredients (
   parent_id         uuid references component_ingredients(id) on delete cascade,  -- 하위 원료
   seq               int not null check (seq > 0),
   name              text not null,
+  name_en           text,                       -- 영문 원재료명 (선택, 영어 라벨 · 번역용)
   origin            text,
   is_organic        boolean not null default false,
   is_additive       boolean not null default false,
@@ -129,7 +131,7 @@ create table product_label_texts (
   language   text not null,                     -- 영어 · 한국어 · 베트남어 …
   pack_level text not null check (pack_level in ('unit', 'outer')),   -- 개별포장 · 외박스
   item_key   text not null check (item_key in ('product_name', 'net_weight', 'ingredients', 'allergens', 'instructions', 'storage',
-               'precaution', 'date', 'origin', 'nutrition', 'manufacturer', 'exporter', 'importer', 'other')),
+               'precaution', 'production_date', 'expiry_date', 'origin', 'nutrition', 'manufacturer', 'exporter', 'importer', 'other')),
   text       text not null,
   source     text,                              -- 어느 라벨에서 옮겼는지
   sort_order int not null default 0

@@ -24,13 +24,13 @@ export const ANSWER_LABEL: Record<Exclude<Answer, '' | 'confirm'>, string> = {
 export const PRODUCT_TEXT_KEYS = [
   'name_ko', 'name_en', 'net_content_value', 'net_content_unit', 'net_content_note', 'serving_desc', 'servings_per_pack',
   'storage_condition', 'date_type', 'date_period', 'manufacturer_name', 'finished_country', 'gtin', 'halal', 'storage_text', 'cooking_en',
-  'caution_en', 'claims', 'pack_w_mm', 'pack_d_mm', 'pack_h_mm', 'label_w_mm', 'label_h_mm',
+  'caution_en', 'claims', 'pack_w_mm', 'pack_d_mm', 'pack_h_mm', 'label_w_mm', 'label_h_mm', 'outer_label_w_mm', 'outer_label_h_mm',
 ] as const;
 export const EXPORT_TEXT_KEYS = [
   'hs6', 'unit_price', 'currency', 'units_per_ctn', 'ctn_net_kg', 'ctn_gross_kg', 'ctn_l_cm', 'ctn_w_cm', 'ctn_h_cm',
   'unit_gross_g', 'pallet_l_cm', 'pallet_w_cm', 'pallet_layers', 'pallet_ctn_count',
 ] as const;
-const PRODUCT_NUM = new Set(['net_content_value', 'servings_per_pack', 'pack_w_mm', 'pack_d_mm', 'pack_h_mm', 'label_w_mm', 'label_h_mm']);
+const PRODUCT_NUM = new Set(['net_content_value', 'servings_per_pack', 'pack_w_mm', 'pack_d_mm', 'pack_h_mm', 'label_w_mm', 'label_h_mm', 'outer_label_w_mm', 'outer_label_h_mm']);
 const EXPORT_NUM = new Set(EXPORT_TEXT_KEYS.filter((k) => !['hs6', 'currency'].includes(k)));
 
 export type CompForm = {
@@ -59,9 +59,13 @@ export const status_key = (entity: 'product' | 'component', id: string, field: s
 const s = (v: unknown) => (v == null ? '' : String(v));
 
 // ---- 원재료 한 줄 ↔ 표 ----
-export function ingredient_line(i: Pick<Ingredient, 'name' | 'origin' | 'ins_no' | 'additive_function'>): string {
-  return [i.name + (i.origin ? `(${i.origin})` : ''), i.ins_no && `INS ${i.ins_no}`, i.additive_function].filter(Boolean).join(' · ');
+// 영문 원재료명(선택)은 "쌀(미국산) / Rice"처럼 " / " 뒤에 적는다
+export function ingredient_line(i: Pick<Ingredient, 'name' | 'origin' | 'ins_no' | 'additive_function'> & { name_en?: string | null }, opt: { en?: boolean } = {}): string {
+  const head = i.name + (i.origin ? `(${i.origin})` : '') + (opt.en !== false && i.name_en ? ` / ${i.name_en}` : '');
+  return [head, i.ins_no && `INS ${i.ins_no}`, i.additive_function].filter(Boolean).join(' · ');
 }
+/** 상태 비교용: 영문명만 바꿨을 때 원재료(한글) 칸이 "확인됨"으로 바뀌지 않게 영문명을 뺀 글 */
+const strip_en = (text: string) => text.split('\n').map((l) => l.replace(/\s+\/\s+[^·]*?(?=\s*·|$)/, '')).join('\n');
 
 /** 한 줄에 원료 하나. 앞에 칸을 띄우거나 "-"로 시작하면 바로 위 원료의 하위 원료 */
 export function parse_ingredients(text: string, component_id: string, before: Ingredient[]): Ingredient[] {
@@ -72,7 +76,8 @@ export function parse_ingredients(text: string, component_id: string, before: In
     if (!raw.trim()) continue;
     const is_child = /^(\s+|-\s*)/.test(raw) && parent !== null;
     const line = raw.replace(/^\s*-?\s*/, '').trim();
-    const [head, ...rest] = line.split(/\s*·\s*/);
+    const [head_all, ...rest] = line.split(/\s*·\s*/);
+    const [head, en] = head_all.split(/\s+\/\s+/);
     const m = head.match(/^(.+?)\s*\((.+)\)$/);
     const name = (m ? m[1] : head).trim();
     let ins: string | null = null; let fn: string | null = null;
@@ -86,6 +91,7 @@ export function parse_ingredients(text: string, component_id: string, before: In
     const prev = before.find((b) => b.name === name && (is_child ? b.parent_id === prev_parent?.id && !!prev_parent : !b.parent_id));
     const ing: Ingredient = {
       id: prev?.id ?? crypto.randomUUID(), component_id: component_id, parent_id: parent_id, seq: is_child ? ++sub : ++top, name,
+      name_en: en?.trim() || null,
       origin: m ? m[2].trim() : null, is_organic: prev?.is_organic ?? false,
       is_additive: !!(ins || fn), additive_function: fn, ins_no: ins,
       allergens: prev?.allergens ?? [], labeled_pct: prev?.labeled_pct ?? null, pct_basis: prev?.pct_basis ?? null,
@@ -106,8 +112,8 @@ export function ingredients_text(list: Ingredient[]): string {
 export function ingredients_display(list: Ingredient[]): string[] {
   const tops = list.filter((i) => !i.parent_id).sort((a, b) => a.seq - b.seq);
   return tops.map((t) => {
-    const kids = list.filter((i) => i.parent_id === t.id).sort((a, b) => a.seq - b.seq).map(ingredient_line);
-    return ingredient_line(t) + (kids.length ? ` [${kids.join(', ')}]` : '');
+    const kids = list.filter((i) => i.parent_id === t.id).sort((a, b) => a.seq - b.seq).map((k) => ingredient_line(k, { en: false }));
+    return ingredient_line(t, { en: false }) + (kids.length ? ` [${kids.join(', ')}]` : '');
   });
 }
 
@@ -128,7 +134,9 @@ export function tracked_fields(f: ProductForm): Tracked[] {
   for (const c of f.comps) {
     for (const def of COMPONENT_FIELDS) {
       if (def.key === 'unit_weight_g' && c.unit === 'g') continue;
-      const raw = def.key === 'animal_ingredient' ? blank_tri(c.animal_ingredient) : s((c as unknown as Record<string, unknown>)[def.key]).trim();
+      const raw = def.key === 'animal_ingredient' ? blank_tri(c.animal_ingredient)
+        : def.key === 'ingredients' ? strip_en(c.ingredients).trim()
+        : s((c as unknown as Record<string, unknown>)[def.key]).trim();
       out.push({ entity: 'component', id: c.id, def, value: raw, scope: c.name });
     }
   }

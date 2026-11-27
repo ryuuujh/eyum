@@ -11,7 +11,7 @@ const empty_product = {
   name_en: null, net_content_value: null, net_content_unit: null, net_content_note: null,
   serving_desc: null, servings_per_pack: null, storage_condition: null, date_type: null, date_period: null,
   manufacturer_name: null, finished_country: null, gtin: null, halal: '미확인', storage_text: null, cooking_en: null, caution_en: null,
-  claims: null, pack_w_mm: null, pack_d_mm: null, pack_h_mm: null, label_w_mm: null, label_h_mm: null,
+  claims: null, pack_w_mm: null, pack_d_mm: null, pack_h_mm: null, label_w_mm: null, label_h_mm: null, outer_label_w_mm: null, outer_label_h_mm: null,
   export_selected: false, status: 'draft', created_at: now, updated_at: now,
 } as const;
 
@@ -54,7 +54,7 @@ const _sampleLinks = [
 ];
 
 const ing = (id: string, seq: number, name: string, extra: Partial<Ingredient> = {}): Ingredient => ({
-  id: `33333333-0000-4000-80${id.slice(-2)}-${String(seq).padStart(12, "0")}`, component_id: id, parent_id: null, seq, name, origin: null, is_organic: false,
+  id: `33333333-0000-4000-80${id.slice(-2)}-${String(seq).padStart(12, "0")}`, component_id: id, parent_id: null, seq, name, name_en: null, origin: null, is_organic: false,
   is_additive: false, additive_function: null, ins_no: null, allergens: [], labeled_pct: null, pct_basis: null, ...extra,
 });
 const _sampleIngredients: Ingredient[] = [

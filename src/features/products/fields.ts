@@ -44,6 +44,8 @@ export const PRODUCT_FIELDS: FieldDef[] = [
   { key: 'packaging', label: '포장 재질', uses: ['라벨'], request: 'package_label' },
   { key: 'pack_size', label: '포장 크기', uses: ['라벨', '서류'], request: 'package_label', hint: '가로 × 세로 × 높이 mm · 포장 전개도 · 포장 사양에 있어요' },
   { key: 'label_size', label: '라벨 부착 면적', uses: ['라벨'], request: 'package_label', hint: '가로 × 세로 mm · 현지어 스티커를 붙일 수 있는 곳' },
+  // 외박스 라벨은 나라 · 바이어마다 필요 여부가 달라 선택 칸 (할 일에는 넣지 않음)
+  { key: 'outer_label_size', label: '외박스 라벨 부착 면적', uses: ['라벨'], request: 'package_label', optional: true },
 ];
 
 export const COMPONENT_FIELDS: FieldDef[] = [
@@ -74,7 +76,7 @@ export const EXPORT_FIELDS: FieldDef[] = [
 
 /** 등록 · 수정 화면에서 이 칸이 있는 탭 (할 일 → "직접 입력"으로 바로 가기) */
 export type FormTab = 'basic' | 'comps' | 'nutrition' | 'label' | 'export';
-const LABEL_KEYS = new Set(['gtin', 'halal', 'storage_text', 'cooking_en', 'packaging', 'pack_size', 'label_size']);
+const LABEL_KEYS = new Set(['gtin', 'halal', 'storage_text', 'cooking_en', 'packaging', 'pack_size', 'label_size', 'outer_label_size']);
 export const FORM_TAB_LABEL: Record<FormTab, string> = { basic: '기본 정보', comps: '구성품', nutrition: '영양성분', label: '표시 정보', export: '수출 · 물류' };
 
 export const form_tab_of = (entity: string, key: string): FormTab =>
@@ -85,5 +87,6 @@ export const form_tab_of = (entity: string, key: string): FormTab =>
 export const COMPOSITE_FIELDS: Record<string, { cols: string[]; names: string[]; unit: string }> = {
   pack_size: { cols: ['pack_w_mm', 'pack_d_mm', 'pack_h_mm'], names: ['w', 'd', 'h'], unit: 'mm' },
   label_size: { cols: ['label_w_mm', 'label_h_mm'], names: ['w', 'h'], unit: 'mm' },
+  outer_label_size: { cols: ['outer_label_w_mm', 'outer_label_h_mm'], names: ['w', 'h'], unit: 'mm' },
   ctn_size: { cols: ['ctn_l_cm', 'ctn_w_cm', 'ctn_h_cm'], names: ['l', 'w', 'h'], unit: 'cm' },
 };
