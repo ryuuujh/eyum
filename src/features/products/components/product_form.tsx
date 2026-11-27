@@ -3,8 +3,8 @@
 import { createContext, useContext, useMemo, useState, useTransition } from 'react';
 import { Field, TabBar, ui } from '@/components/ui';
 import { useRouter } from 'next/navigation';
-import { NUTRIENT_KEYS, type Nutrition, type ProductComponent } from '@/features/products/types';
-import { ANSWER_LABEL, new_comp, status_key, tracked_fields, type Answer, type CompForm, type ProductForm as Form } from '@/features/products/form';
+import { LABEL_ITEMS, LABEL_PACK_LABEL, NUTRIENT_KEYS, type LabelItemKey, type LabelPackLevel, type Nutrition, type ProductComponent } from '@/features/products/types';
+import { ANSWER_LABEL, composite_text, new_comp, status_key, tracked_fields, type Answer, type CompForm, type ProductForm as Form } from '@/features/products/form';
 import { COMPONENT_FIELDS, EXPORT_FIELDS, PRODUCT_FIELDS, FORM_TAB_LABEL, form_tab_of, type FieldDef, type FormTab } from '@/features/products/fields';
 import { calc_nutrition } from '@/features/products/nutrition';
 import { save_product } from '@/features/products/save';
@@ -168,10 +168,11 @@ export function ProductForm({ initial, hints: initialHints, library = [], initia
               </select>
               <Under entity="product" id={f.id} k="storage_condition" value={f.p.storage_condition} />
             </Field>
-            <Field label="기한 종류" optional>
+            <Field label="기한 종류">
               <select className={input} value={f.p.date_type} onChange={(e) => set_p('date_type', e.target.value)}>
                 <option value="">선택</option>{['소비기한', '품질유지기한'].map((v) => <option key={v}>{v}</option>)}
               </select>
+              <Under entity="product" id={f.id} k="date_type" value={f.p.date_type} />
             </Field>
             <PText k="date_period" label="기한" />
             <PText k="manufacturer_name" label="완제품 제조원" span={2} />
@@ -237,7 +238,8 @@ export function ProductForm({ initial, hints: initialHints, library = [], initia
                   {c.animal_ingredient === '있음'
                     ? <Field label="동물성 원료 내용" optional><input className={input} value={c.animal_ingredient_detail} placeholder="예: 우유(유청분말)" onChange={(e) => set_c(i, { animal_ingredient_detail: e.target.value })} /></Field>
                     : <div />}
-                  <Field label="교차접촉 알레르기" optional><input className={input} value={c.cross_contact} placeholder="예: 같은 시설에서 대두·밀 사용" onChange={(e) => set_c(i, { cross_contact: e.target.value })} /></Field>
+                  <Field label="교차접촉 알레르기"><input className={input} value={c.cross_contact} placeholder="예: 같은 시설에서 대두·밀 사용" onChange={(e) => set_c(i, { cross_contact: e.target.value })} />
+                    <Under entity="component" id={c.id} k="cross_contact" value={c.cross_contact} /></Field>
                 </div>
               </div>
             ))}
@@ -325,16 +327,40 @@ export function ProductForm({ initial, hints: initialHints, library = [], initia
               ))}
               <button className="text-sm text-[#2f5bd3]" onClick={() => setF((y) => ({ ...y, packaging: [...y.packaging, { part: '', material: '', separable: '' }] }))}>+ 부위 추가</button>
             </div>
-            <Field label="포장 크기 (가로 × 세로 × 높이 mm)" span={2} optional>
+            <Field label="포장 크기 (가로 × 세로 × 높이 mm)" span={2}>
               <div className="flex gap-2">
                 {(['pack_w_mm', 'pack_d_mm', 'pack_h_mm'] as const).map((k) => <input key={k} className={input} inputMode="decimal" value={f.p[k]} onChange={(e) => set_p(k, e.target.value)} />)}
               </div>
+              <Under entity="product" id={f.id} k="pack_size" value={composite_text(f.p, 'pack_size')} />
             </Field>
-            <Field label="라벨 부착 면적 (가로 × 세로 mm)" optional>
+            <Field label="라벨 부착 면적 (가로 × 세로 mm)">
               <div className="flex gap-2">
                 {(['label_w_mm', 'label_h_mm'] as const).map((k) => <input key={k} className={input} inputMode="decimal" value={f.p[k]} onChange={(e) => set_p(k, e.target.value)} />)}
               </div>
+              <Under entity="product" id={f.id} k="label_size" value={composite_text(f.p, 'label_size')} />
             </Field>
+            <div className="sm:col-span-3">
+              <div className="mb-1 text-sm font-medium text-slate-700">기존 라벨 문구 <span className="font-normal text-slate-400">(선택)</span></div>
+              <p className="mb-2 text-xs text-slate-500">이미 만든 라벨(영어 · 중국어 등)의 문구를 항목별로 그대로 붙여 넣어 주세요. 라벨 탭이 번역 · 비교에 써요. 제조원 · 수출자 · 수입자 문구(주소)는 외부 공유와 AI 전송에서 빠져요.</p>
+              {f.labels.map((x, i) => {
+                const set_l = (patch: Partial<Form['labels'][number]>) => setF((y) => ({ ...y, labels: y.labels.map((z, j) => (j === i ? { ...z, ...patch } : z)) }));
+                return (
+                  <div key={i} className="mb-2 grid grid-cols-[7rem_7rem_9rem_1fr_9rem_auto] gap-2">
+                    <input className={input} placeholder="언어 (예: 영어)" value={x.language} onChange={(e) => set_l({ language: e.target.value })} />
+                    <select className={input} value={x.pack_level} onChange={(e) => set_l({ pack_level: e.target.value as LabelPackLevel })}>
+                      {Object.entries(LABEL_PACK_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                    </select>
+                    <select className={input} value={x.item_key} onChange={(e) => set_l({ item_key: e.target.value as LabelItemKey })}>
+                      {Object.entries(LABEL_ITEMS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                    </select>
+                    <textarea rows={1} className={input} placeholder="라벨 원문" value={x.text} onChange={(e) => set_l({ text: e.target.value })} />
+                    <input className={input} placeholder="출처 (예: 영어 라벨 10.14)" value={x.source} onChange={(e) => set_l({ source: e.target.value })} />
+                    <button className="px-2 text-sm text-slate-400 hover:text-rose-600" onClick={() => setF((y) => ({ ...y, labels: y.labels.filter((_, j) => j !== i) }))}>빼기</button>
+                  </div>
+                );
+              })}
+              <button className="text-sm text-[#2f5bd3]" onClick={() => setF((y) => ({ ...y, labels: [...y.labels, { language: y.labels.at(-1)?.language ?? '영어', pack_level: 'unit', item_key: 'product_name', text: '', source: y.labels.at(-1)?.source ?? '' }] }))}>+ 문구 추가</button>
+            </div>
           </div>
         )}
 
@@ -352,15 +378,17 @@ export function ProductForm({ initial, hints: initialHints, library = [], initia
                 </select>
               </div>
               <Under entity="product" id={f.id} k="unit_price" value={f.exp.unit_price} />
+              <Under entity="product" id={f.id} k="currency" value={f.exp.currency} />
             </Field>
             <ENum k="units_per_ctn" label="입수 (1 CTN)" unit="개" />
             <ENum k="unit_gross_g" label="1개당 총중량 (포장 포함)" unit="g" />
             <ENum k="ctn_net_kg" label="CTN 순중량" unit="kg" />
             <ENum k="ctn_gross_kg" label="CTN 총중량" unit="kg" />
-            <Field label="CTN 크기 (가로 × 세로 × 높이 cm)" span={2} optional>
+            <Field label="CTN 크기 (가로 × 세로 × 높이 cm)" span={2}>
               <div className="flex gap-2">
                 {(['ctn_l_cm', 'ctn_w_cm', 'ctn_h_cm'] as const).map((k) => <input key={k} className={input} inputMode="decimal" value={f.exp[k]} onChange={(e) => set_e(k, e.target.value)} />)}
               </div>
+              <Under entity="product" id={f.id} k="ctn_size" value={composite_text(f.exp, 'ctn_size')} />
             </Field>
             <div />
             <Field label="팔레트 (가로 × 세로 cm · 단수)" span={2} optional>

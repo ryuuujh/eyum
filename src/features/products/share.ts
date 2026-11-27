@@ -2,7 +2,7 @@
 // 규칙: 칸마다 값 + 확인 상태를 같이 준다. 확인 안 된 값은 "추가 확인 필요"로 보여 주고 판정에 쓰지 말 것.
 // 다른 탭은 DB 표를 직접 읽지 말고 이 함수(또는 /api/products/[code])만 쓴다. 표 구조가 바뀌어도 여기만 고치면 된다.
 import 'server-only';
-import { STATUS_LABEL, WAIT_REASON_LABEL, type FieldStatusValue, type Ingredient, type WaitReason } from '@/features/products/types';
+import { LABEL_ADDRESS_ITEMS, LABEL_ITEMS, LABEL_PACK_LABEL, STATUS_LABEL, WAIT_REASON_LABEL, type FieldStatusValue, type Ingredient, type LabelItemKey, type LabelPackLevel, type WaitReason } from '@/features/products/types';
 import { get_product_detail, get_products, type ProductDetail } from './data';
 import { build_detail_view } from './view';
 import { calc_nutrition, type NutritionResult } from './nutrition';
@@ -14,7 +14,8 @@ export type SharedField = {
   component: string | null;    // 구성품 칸이면 구성품 이름
   field: string;               // DB 칸 이름 (field_status.field_key)
   label: string;               // 화면 이름
-  value: string | null;        // 보여 줄 값 (없으면 null)
+  value: string | null;        // 보여 줄 값 (화면용 글자, 예: "1902.30" · "226g" · "143 × 143 × 98 mm"). 없으면 null
+  raw: unknown;                // 계산용 원값 (숫자, HS는 숫자만 "190230", 묶은 칸은 { w, d, h, unit } 객체). 없으면 null
   status: FieldStatusValue;    // confirmed · needs_check · missing · on_hold · not_applicable
   status_label: string;
   usable: boolean;             // 판정에 써도 되는 값인지 (확인됨 또는 해당 없음)
@@ -36,7 +37,17 @@ export type SharedProduct = {
   fields: SharedField[];
   components: { name: string; amount: number; unit: string; quantity: number; ingredients: SharedIngredient[] }[];
   nutrition: NutritionResult;  // 구성품 합산 (100g당은 실중량을 모르면 null = 보류)
+  packs: SharedPacks;          // 개별포장 · 외박스 숫자 모음 (CI · PL · 라벨 계산용)
+  label_texts: SharedLabelText[];   // 기존 라벨 문구 (원문 그대로). external=1이면 주소가 있는 항목(제조원 · 수출자 · 수입자)은 뺌
 };
+
+export type SharedPacks = {
+  unit: { net_content: number | null; net_unit: string | null; gross_g: number | null; size_mm: { w: number | null; d: number | null; h: number | null } | null; label_area_mm: { w: number | null; h: number | null } | null };
+  outer: { units_per_ctn: number | null; net_kg: number | null; gross_kg: number | null; size_cm: { l: number | null; w: number | null; h: number | null } | null };
+  pallet: { l_cm: number | null; w_cm: number | null; layers: number | null; ctn_count: number | null };
+};
+
+export type SharedLabelText = { language: string; pack_level: LabelPackLevel; pack_label: string; item_key: LabelItemKey; item_label: string; text: string; source: string | null };
 
 function tree(list: Ingredient[], parent: string | null = null): SharedIngredient[] {
   return list.filter((i) => i.parent_id === parent).sort((a, b) => a.seq - b.seq).map((i) => ({
@@ -66,6 +77,7 @@ export function to_shared(d: ProductDetail, opt: { for?: UseTab | null; external
       fields.push({
         key: comp ? `component.${comp.name}.${field}` : `${scope}.${field}`,
         scope, component: comp?.name ?? null, field, label: t.def.label, value,
+        raw: value == null ? null : t.raw,
         status: t.status, status_label: STATUS_LABEL[t.status],
         usable: t.status === 'confirmed' || t.status === 'not_applicable',
         wait_reason: reason, wait_label: reason ? WAIT_REASON_LABEL[reason] : null,
@@ -88,6 +100,31 @@ export function to_shared(d: ProductDetail, opt: { for?: UseTab | null; external
       ingredients: tree(d.ingredients.filter((i) => i.component_id === pc.component.id)),
     })),
     nutrition: calc_nutrition(d.components, d.product.servings_per_pack),
+    packs: packs_of(d),
+    label_texts: d.labelTexts
+      .filter((x) => !(external && LABEL_ADDRESS_ITEMS.includes(x.item_key)))
+      .filter(() => !tab || tab === '라벨' || tab === '서류')
+      .map((x) => ({ language: x.language, pack_level: x.pack_level, pack_label: LABEL_PACK_LABEL[x.pack_level], item_key: x.item_key,
+        item_label: LABEL_ITEMS[x.item_key], text: x.text, source: x.source })),
+  };
+}
+
+const n = (v: unknown) => (v == null || v === '' ? null : Number(v));
+const obj = <T extends Record<string, number | null>>(o: T) => (Object.values(o).every((v) => v == null) ? null : o);
+
+function packs_of(d: ProductDetail): SharedPacks {
+  const p = d.product; const e = d.exportInfo;
+  return {
+    unit: {
+      net_content: n(p.net_content_value), net_unit: p.net_content_unit, gross_g: n(e?.unit_gross_g),
+      size_mm: obj({ w: n(p.pack_w_mm), d: n(p.pack_d_mm), h: n(p.pack_h_mm) }),
+      label_area_mm: obj({ w: n(p.label_w_mm), h: n(p.label_h_mm) }),
+    },
+    outer: {
+      units_per_ctn: n(e?.units_per_ctn), net_kg: n(e?.ctn_net_kg), gross_kg: n(e?.ctn_gross_kg),
+      size_cm: obj({ l: n(e?.ctn_l_cm), w: n(e?.ctn_w_cm), h: n(e?.ctn_h_cm) }),
+    },
+    pallet: { l_cm: n(e?.pallet_l_cm), w_cm: n(e?.pallet_w_cm), layers: n(e?.pallet_layers), ctn_count: n(e?.pallet_ctn_count) },
   };
 }
 
@@ -97,9 +134,9 @@ export async function get_shared_product(code: string, opt: { for?: UseTab | nul
   return d ? to_shared(d, opt) : null;
 }
 
-/** 다른 탭용: 제품 고르기 목록 */
-export async function list_shared_products() {
-  return (await get_products()).map((p) => ({ code: p.code, name_ko: p.name_ko, status: p.status }));
+/** 다른 탭용: 제품 고르기 목록. selected: true면 "수출할 제품"으로 체크한 것만 (없으면 빈 목록 → "선택된 제품이 없습니다") */
+export async function list_shared_products(opt: { selected?: boolean } = {}) {
+  return (await get_products(opt)).map((p) => ({ code: p.code, name_ko: p.name_ko, status: p.status, export_selected: p.export_selected }));
 }
 
 export const USE_TABS: UseTab[] = ['규제', '라벨', '서류'];

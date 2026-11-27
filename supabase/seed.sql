@@ -2,9 +2,17 @@
 -- 고정 id를 써서 다른 탭이 같은 제품을 가리킬 수 있게 한다.
 
 insert into products (id, code, name_ko, net_content_value, net_content_unit, net_content_note,
-  serving_desc, servings_per_pack, storage_condition, finished_country, halal, status)
+  serving_desc, servings_per_pack, storage_condition, finished_country, halal, export_selected, status)
 values ('11111111-0000-4000-8000-000000000001', 'ttok-ez', '또떡EZ', 226, 'g', '조리수 제외',
-  '1인분', 2, '상온', '대한민국', '미확인', 'draft');
+  '1인분', 2, '상온', '대한민국', '미확인', true, 'draft');
+
+-- 기존 라벨 문구: 영어 라벨(10.14) 원문 일부 (주소가 있는 제조원 · 수출자 · 수입자 항목은 예시에 넣지 않음)
+insert into product_label_texts (product_id, language, pack_level, item_key, text, source, sort_order) values
+  ('11111111-0000-4000-8000-000000000001', '영어', 'unit', 'product_name', 'TOTTEOK EZ', '영어 라벨 (10.14)', 1),
+  ('11111111-0000-4000-8000-000000000001', '영어', 'unit', 'net_weight', '226g (Rice Cakes 200 g; Totteok Powder A 20 g; Brewed Soy Sauce 6 g )', '영어 라벨 (10.14)', 2),
+  ('11111111-0000-4000-8000-000000000001', '영어', 'unit', 'ingredients', 'Totteok Powder A [Tomato Powder (Spain), Organic Unrefined Cane Sugar (Argentina), Salt (Korea), Onion Powder (Korea), Garlic Powder (Korea), Kelp Powder (Korea)], Rice Cakes [Rice (USA), Refined Salt, Citric Acid, Ethyl Alcohol], Brewed Soy Sauce (Korea). Contains Soybean, Wheat, and Tomato.', '영어 라벨 (10.14)', 3),
+  ('11111111-0000-4000-8000-000000000001', '영어', 'unit', 'storage', 'Store in a cool, dry place. Avoid direct sunlight', '영어 라벨 (10.14)', 4),
+  ('11111111-0000-4000-8000-000000000001', '영어', 'unit', 'origin', 'Republic of Korea', '영어 라벨 (10.14)', 5);
 
 insert into components (id, name, manufacturer_name, manufacturer_public, report_no, food_type_kr,
   animal_ingredient, nutrition_basis, unit_weight_g, nutrition_source) values

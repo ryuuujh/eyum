@@ -2,7 +2,7 @@
 // NEXT_PUBLIC_SUPABASE_URL · NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY가 있으면 Supabase에서, 없으면 예시 데이터에서 읽는다.
 import 'server-only';
 import { createClient } from '@supabase/supabase-js';
-import type { Component, FieldStatus, Ingredient, Nutrition, Product, ProductComponent, ProductExport } from '@/features/products/types';
+import type { Component, FieldStatus, Ingredient, LabelText, Nutrition, Product, ProductComponent, ProductExport } from '@/features/products/types';
 import * as S from './sample';
 
 export type PackagingPart = { id: string; part: string; material: string | null; separable: string | null; sort_order: number };
@@ -13,6 +13,7 @@ export type ProductDetail = {
   ingredients: Ingredient[];
   exportInfo: ProductExport | null;
   packaging: PackagingPart[];
+  labelTexts: LabelText[];
   statuses: FieldStatus[];
 };
 
@@ -22,10 +23,13 @@ export function db() {
   return url && key ? createClient(url, key, { auth: { persistSession: false } }) : null;
 }
 
-export async function get_products(): Promise<Product[]> {
+/** selected: true면 "수출할 제품"으로 체크한 것만 */
+export async function get_products(opt: { selected?: boolean } = {}): Promise<Product[]> {
   const client = db();
-  if (!client) return S.sample_products;
-  const { data, error } = await client.from('products').select('*').neq('status', 'archived').order('updated_at', { ascending: false });
+  if (!client) return S.sample_products.filter((p) => !opt.selected || p.export_selected);
+  let q = client.from('products').select('*').neq('status', 'archived');
+  if (opt.selected) q = q.eq('export_selected', true);
+  const { data, error } = await q.order('updated_at', { ascending: false });
   if (error) throw error;
   return data as Product[];
 }
@@ -52,13 +56,14 @@ export async function get_product_detail(code: string): Promise<ProductDetail | 
   });
   const component_ids = components.map((c) => c.component.id);
 
-  const [ing, exp, pack, st] = await Promise.all([
+  const [ing, exp, pack, lab, st] = await Promise.all([
     client.from('component_ingredients').select('*').in('component_id', component_ids).order('seq'),
     client.from('product_export').select('*').eq('product_id', product.id).maybeSingle(),
     client.from('product_packaging_parts').select('*').eq('product_id', product.id).order('sort_order'),
+    client.from('product_label_texts').select('*').eq('product_id', product.id).order('sort_order'),
     client.from('field_status').select('*').in('entity_id', [product.id, ...component_ids]),
   ]);
-  for (const r of [ing, exp, pack, st]) if (r.error) throw r.error;
+  for (const r of [ing, exp, pack, lab, st]) if (r.error) throw r.error;
 
   return {
     product: product as Product,
@@ -66,6 +71,7 @@ export async function get_product_detail(code: string): Promise<ProductDetail | 
     ingredients: (ing.data ?? []) as Ingredient[],
     exportInfo: (exp.data ?? null) as ProductExport | null,
     packaging: (pack.data ?? []) as PackagingPart[],
+    labelTexts: (lab.data ?? []) as LabelText[],
     statuses: (st.data ?? []) as FieldStatus[],
   };
 }
@@ -88,6 +94,7 @@ function sample_detail(code: string): ProductDetail | null {
     ingredients: S.sample_ingredients.filter((i) => ids.includes(i.component_id)),
     exportInfo: S.sample_export.find((e) => e.product_id === product.id) ?? null,
     packaging: S.sample_packaging.filter((x) => x.product_id === product.id).sort((a, b) => a.sort_order - b.sort_order),
+    labelTexts: S.sample_label_texts.filter((x) => x.product_id === product.id).sort((a, b) => a.sort_order - b.sort_order),
     statuses: S.sample_status.filter((s) => s.entity_id === product.id || ids.includes(s.entity_id)),
   };
 }
@@ -119,4 +126,16 @@ export async function get_component_library(): Promise<LibraryComponent[]> {
     statuses: ((st.data ?? []) as FieldStatus[]).filter((s) => s.entity_id === c.id),
     usedBy: ((links.data ?? []) as unknown as L[]).filter((l) => l.component_id === c.id && l.product && l.product.status !== 'archived').map((l) => ({ code: l.product!.code, name: l.product!.name_ko })),
   }));
+}
+
+/** 수출할 제품 체크 켜기 · 끄기 */
+export async function set_export_selected(code: string, selected: boolean) {
+  const client = db();
+  if (!client) {
+    const p = S.sample_products.find((x) => x.code === code);
+    if (p) p.export_selected = selected;
+    return;
+  }
+  const { error } = await client.from('products').update({ export_selected: selected }).eq('code', code);
+  if (error) throw error;
 }

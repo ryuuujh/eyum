@@ -1,5 +1,5 @@
 // Supabase 연결 전 화면 개발용 예시 데이터 (supabase/seed.sql과 같은 값)
-import type { Component, FieldStatus, Ingredient, Nutrition, Product, ProductExport } from '@/features/products/types';
+import type { Component, FieldStatus, Ingredient, LabelText, Nutrition, Product, ProductExport } from '@/features/products/types';
 
 const P = '11111111-0000-4000-8000-000000000001';
 const C1 = '22222222-0000-4000-8000-000000000001';
@@ -12,7 +12,7 @@ const empty_product = {
   serving_desc: null, servings_per_pack: null, storage_condition: null, date_type: null, date_period: null,
   manufacturer_name: null, finished_country: null, gtin: null, halal: '미확인', storage_text: null, cooking_en: null, caution_en: null,
   claims: null, pack_w_mm: null, pack_d_mm: null, pack_h_mm: null, label_w_mm: null, label_h_mm: null,
-  status: 'draft', created_at: now, updated_at: now,
+  export_selected: false, status: 'draft', created_at: now, updated_at: now,
 } as const;
 
 const _sampleProducts: Product[] = [
@@ -20,6 +20,7 @@ const _sampleProducts: Product[] = [
     ...empty_product, id: P, code: 'ttok-ez', name_ko: '또떡EZ',
     net_content_value: 226, net_content_unit: 'g', net_content_note: '조리수 제외',
     serving_desc: '1인분', servings_per_pack: 2, storage_condition: '상온', finished_country: '대한민국',
+    export_selected: true,
   },
 ];
 
@@ -74,6 +75,17 @@ const _sampleExport: ProductExport[] = [];
 
 const _samplePackaging: { product_id: string; id: string; part: string; material: string | null; separable: string | null; sort_order: number }[] = [];
 
+// 기존 라벨 문구: 영어 라벨(10.14)에서 옮긴 원문 일부 (주소가 있는 제조원 · 수출자 · 수입자 항목은 예시에 넣지 않음)
+const lt = (seq: number, pack_level: LabelText['pack_level'], item_key: LabelText['item_key'], text: string) =>
+  ({ product_id: P, id: `44444444-0000-4000-8000-${String(seq).padStart(12, '0')}`, language: '영어', pack_level, item_key, text, source: '영어 라벨 (10.14)', sort_order: seq });
+const _sampleLabelTexts: (LabelText & { product_id: string })[] = [
+  lt(1, 'unit', 'product_name', 'TOTTEOK EZ'),
+  lt(2, 'unit', 'net_weight', '226g (Rice Cakes 200 g; Totteok Powder A 20 g; Brewed Soy Sauce 6 g )'),
+  lt(3, 'unit', 'ingredients', 'Totteok Powder A [Tomato Powder (Spain), Organic Unrefined Cane Sugar (Argentina), Salt (Korea), Onion Powder (Korea), Garlic Powder (Korea), Kelp Powder (Korea)], Rice Cakes [Rice (USA), Refined Salt, Citric Acid, Ethyl Alcohol], Brewed Soy Sauce (Korea). Contains Soybean, Wheat, and Tomato.'),
+  lt(4, 'unit', 'storage', 'Store in a cool, dry place. Avoid direct sunlight'),
+  lt(5, 'unit', 'origin', 'Republic of Korea'),
+];
+
 const fs = (entity_type: FieldStatus['entity_type'], entity_id: string, field_key: string, status: FieldStatus['status'],
   extra: Partial<FieldStatus> = {}): FieldStatus => ({
   id: `${entity_id}-${field_key}`, entity_type, entity_id, field_key, status, wait_reason: null, wait_who: null,
@@ -104,7 +116,7 @@ const _sampleStatus: FieldStatus[] = [
 
 // 저장 화면과 읽기 화면이 같은 예시 데이터를 보도록 서버 메모리 한 곳에 둔다 (Supabase 연결 전 임시)
 const G = globalThis as unknown as { __productSample?: Record<string, unknown> };
-G.__productSample ??= { sampleProducts: _sampleProducts, sampleComponents: _sampleComponents, sampleNutrition: _sampleNutrition, sampleLinks: _sampleLinks, sampleIngredients: _sampleIngredients, sampleExport: _sampleExport, samplePackaging: _samplePackaging, sampleStatus: _sampleStatus };
+G.__productSample ??= { sampleProducts: _sampleProducts, sampleComponents: _sampleComponents, sampleNutrition: _sampleNutrition, sampleLinks: _sampleLinks, sampleIngredients: _sampleIngredients, sampleExport: _sampleExport, samplePackaging: _samplePackaging, sampleLabelTexts: _sampleLabelTexts, sampleStatus: _sampleStatus };
 const store = G.__productSample;
 export const sample_products = store.sampleProducts as typeof _sampleProducts;
 export const sample_components = store.sampleComponents as typeof _sampleComponents;
@@ -113,4 +125,5 @@ export const sample_links = store.sampleLinks as typeof _sampleLinks;
 export const sample_ingredients = store.sampleIngredients as typeof _sampleIngredients;
 export const sample_export = store.sampleExport as typeof _sampleExport;
 export const sample_packaging = store.samplePackaging as typeof _samplePackaging;
+export const sample_label_texts = store.sampleLabelTexts as typeof _sampleLabelTexts;
 export const sample_status = store.sampleStatus as typeof _sampleStatus;

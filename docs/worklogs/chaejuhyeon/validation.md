@@ -33,3 +33,13 @@
   - 채주현 PC(Node 26.13 · npm 11.20 · Docker Desktop)에서 `npm install` 성공. 저장소 밖 검증용 폴더(`C:\Users\user\eyum_local_db`)에 로컬 Supabase를 띄우고 마이그레이션(임시 hs_classifications → 0100 → 0200 → 0500 → 0900)과 seed 적용: 오류 없음. 팀 공통 DB는 쓰지 않음.
   - `.env.local`을 로컬 Supabase로 두고 `npm run dev` 후 `/api/dev/check-db`: connected · Supabase · ok. 제품 목록 읽기(1개), 구성품 목록(3개), 또떡EZ 상세(구성품 3 · 원재료 10줄 · 상태 19개), 새 등록 저장 · 다시 읽기, 수정 저장(이름 · 원재료), 라벨 통로(칸 14 · 바로 쓸 값 4), 점검용 제품 지우기 모두 통과. `/products` 200, 규제 통로 요약 20 / 5 / 7 / 8.
 - **미검증 범위:** 브라우저에서 등록 · 수정 버튼을 눌러 저장하는 흐름 전체(11/28 예정), 실제 OpenAI 호출(키 없음), 팀 기준 Node 24에서 실행(채주현 PC는 Node 26).
+
+## 2026-11-27 / 다른 탭 연결 보강
+
+- **확인할 동작:** 새 칸 · 수출 체크 · 라벨 문구가 저장되고 통로로 나가는지, 기존 저장 규칙이 그대로인지.
+- **수행 방법 / 결과**
+  - `npm run typecheck` · `npm run lint` · `npm run build`: 모두 통과 (클라우드 작업 사본, Node 22).
+  - 빈 PostgreSQL 16에 우리 0100 · 0200 → GPT 0300 · 0400 → 0500 → GPT 0600 · 0700 · 0800 → 0900 → seed (GPT 11/27 통합본 포함): 오류 없음.
+  - `to_rows`로 만든 값을 `save_product`에 넣음: 새 제품(포장 크기 · CTN 크기 · 통화 · 교차접촉 · 외박스 라벨 문구) 저장 → 상태 pack_size · ctn_size · currency · cross_contact 모두 확인됨. 또떡EZ 수정(기한 종류) 후 수출 체크 true 유지, 라벨 문구 5줄 유지.
+  - 통로(예시 데이터 모드): `list_shared_products({ selected: true })` → 체크한 또떡EZ만. 서류 통로 HS `value` 1902.30 / `raw` "190230", HSK `value` 1902.30-9000 / `raw` "1902309000", CTN 크기 `raw` { l: 45, w: 30, h: null, unit: "cm" }. external=1이면 제조원 라벨 문구 · 단가 빠짐.
+- **미검증 범위:** 채주현 PC 로컬 Supabase에서 새 마이그레이션 다시 적용 · check-db, 브라우저에서 체크 상자 · 라벨 문구 입력 누르기, 엑셀 내려받기에 새 칸이 어떻게 보이는지.

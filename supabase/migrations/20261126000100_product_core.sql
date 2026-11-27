@@ -37,6 +37,7 @@ create table products (
   claims             text,                         -- 포장 강조 문구 · 인증 마크
   pack_w_mm          numeric, pack_d_mm numeric, pack_h_mm numeric,
   label_w_mm         numeric, label_h_mm numeric,  -- 라벨 부착 가능 면적
+  export_selected    boolean not null default false,  -- 수출할 제품 체크 (다른 탭은 /api/products?selected=1로 고름)
   status             text not null default 'draft' check (status in ('draft', 'active', 'archived')),
   created_at         timestamptz not null default now(),
   updated_at         timestamptz not null default now()
@@ -120,6 +121,20 @@ create table product_packaging_parts (
   separable  text check (separable in ('분리됨', '붙어 있음')),
   sort_order int not null default 0
 );
+
+-- 기존 라벨 문구 (원문 그대로, 라벨 탭이 번역 · 비교에 씀). 제조원 · 수출자 · 수입자 항목은 주소가 있어 외부 공유 · AI 전송에서 뺀다
+create table product_label_texts (
+  id         uuid primary key default gen_random_uuid(),
+  product_id uuid not null references products(id) on delete cascade,
+  language   text not null,                     -- 영어 · 한국어 · 베트남어 …
+  pack_level text not null check (pack_level in ('unit', 'outer')),   -- 개별포장 · 외박스
+  item_key   text not null check (item_key in ('product_name', 'net_weight', 'ingredients', 'allergens', 'instructions', 'storage',
+               'precaution', 'date', 'origin', 'nutrition', 'manufacturer', 'exporter', 'importer', 'other')),
+  text       text not null,
+  source     text,                              -- 어느 라벨에서 옮겼는지
+  sort_order int not null default 0
+);
+create index product_label_texts_product on product_label_texts(product_id);
 
 -- 올린 자료 (원본은 Supabase Storage, AI로 보내기 전 민감정보 제거)
 create table source_documents (

@@ -1,9 +1,16 @@
 // 등록 · 수정 화면의 입력 모델과 저장 규칙 (Claude)
 // 규칙: 사람이 새로 적거나 바꾼 값 = confirmed. 빈 칸은 답변(제조사에 확인 중 등)에 따라 상태를 정한다.
-import { NUTRIENT_KEYS, type Component, type FieldStatus, type FieldStatusValue, type Ingredient, type Nutrition,
+import { NUTRIENT_KEYS, type Component, type FieldStatus, type FieldStatusValue, type Ingredient, type LabelItemKey, type LabelPackLevel, type LabelText, type Nutrition,
   type Product, type ProductExport, type TriState, type WaitReason } from '@/features/products/types';
 import type { PackagingPart, ProductDetail } from './data';
-import { COMPONENT_FIELDS, EXPORT_FIELDS, PRODUCT_FIELDS, type FieldDef } from './fields';
+import { COMPONENT_FIELDS, COMPOSITE_FIELDS, EXPORT_FIELDS, PRODUCT_FIELDS, type FieldDef } from './fields';
+
+/** 묶은 칸(포장 크기 등)의 보여 줄 값: 하나라도 있으면 "143 × 143 × 98" (빈 칸은 ?) */
+export function composite_text(src: Record<string, unknown> | null | undefined, key: string): string {
+  const c = COMPOSITE_FIELDS[key];
+  const v = c.cols.map((k) => src?.[k]).map((x) => (x == null ? '' : String(x).trim()));
+  return v.some((x) => x !== '') ? v.map((x) => x || '?').join(' × ') : '';
+}
 
 /** 빈 칸에 고르는 답변. confirm = 값이 맞다고 확인 */
 export type Answer = '' | WaitReason | 'not_applicable' | 'confirm';
@@ -43,6 +50,7 @@ export type ProductForm = {
   comps: CompForm[];
   packaging: { part: string; material: string; separable: '' | '분리됨' | '붙어 있음' }[];
   exp: Record<(typeof EXPORT_TEXT_KEYS)[number], string>;
+  labels: { language: string; pack_level: LabelPackLevel; item_key: LabelItemKey; text: string; source: string }[];   // 기존 라벨 문구
   answers: Record<string, Answer>;              // key: statusKey()
   aiNotes?: Record<string, string>;            // AI가 채운 칸 → 확인 필요 + 근거 메모
 };
@@ -113,6 +121,7 @@ export function tracked_fields(f: ProductForm): Tracked[] {
   const pv = (k: string): string => {
     if (k === 'packaging') return f.packaging.filter((x) => x.material.trim()).map((x) => `${x.part} ${x.material}`).join(', ');
     if (k === 'halal') return blank_tri(f.p.halal);
+    if (k in COMPOSITE_FIELDS) return composite_text(f.p, k);
     return s((f.p as Record<string, string>)[k]).trim();
   };
   for (const def of PRODUCT_FIELDS) out.push({ entity: 'product', id: f.id, def, value: pv(def.key), scope: f.p.name_ko });
@@ -123,7 +132,11 @@ export function tracked_fields(f: ProductForm): Tracked[] {
       out.push({ entity: 'component', id: c.id, def, value: raw, scope: c.name });
     }
   }
-  for (const def of EXPORT_FIELDS) out.push({ entity: 'product', id: f.id, def, value: s(f.exp[def.key as keyof ProductForm['exp']]).trim(), scope: f.p.name_ko });
+  for (const def of EXPORT_FIELDS) {
+    if (def.key === 'hsk10') continue;   // HS 찾기로만 확정 (화면에서 적지 않음)
+    const value = def.key in COMPOSITE_FIELDS ? composite_text(f.exp, def.key) : s(f.exp[def.key as keyof ProductForm['exp']]).trim();
+    out.push({ entity: 'product', id: f.id, def, value, scope: f.p.name_ko });
+  }
   return out;
 }
 
@@ -158,6 +171,7 @@ export function to_form(d: ProductDetail | null): ProductForm {
     }),
     packaging: (d?.packaging ?? []).map((x) => ({ part: x.part, material: s(x.material), separable: (x.separable ?? '') as '' })),
     exp: Object.fromEntries(EXPORT_TEXT_KEYS.map((k) => [k, s(d?.exportInfo?.[k as keyof ProductExport])])) as ProductForm['exp'],
+    labels: (d?.labelTexts ?? []).map((x) => ({ language: x.language, pack_level: x.pack_level, item_key: x.item_key, text: x.text, source: s(x.source) })),
     answers: {},
   };
   if (!d) { form.p.halal = '미확인'; form.p.net_content_unit = 'g'; form.comps = [new_comp()]; form.packaging = [{ part: '', material: '', separable: '' }]; }
@@ -180,6 +194,7 @@ export type SaveRows = {
   ingredients: Ingredient[];
   nutrition: (Nutrition & { component_id: string })[];
   packaging: PackagingPart[];
+  labelTexts: LabelText[];
   exportInfo: Partial<ProductExport> & { product_id: string } | null;
   statuses: Omit<FieldStatus, 'id' | 'updated_at'>[];
 };
@@ -202,7 +217,8 @@ export function validate(f: ProductForm): string[] {
 /** prevBase: 저장 전 상태 비교용. 다른 제품에서 불러온 구성품까지 합친 것 (없으면 before) */
 export function to_rows(f: ProductForm, before: ProductDetail | null, today = new Date(), prev_base?: ProductDetail | null): SaveRows {
   const base = prev_base ?? before;
-  const p: Record<string, unknown> = { id: f.id, code: f.code, status: before?.product.status ?? 'draft' };
+  // 수출할 제품 체크는 목록 · 상세에서 따로 바꾼다 (등록 · 수정 화면은 원래 값 유지)
+  const p: Record<string, unknown> = { id: f.id, code: f.code, status: before?.product.status ?? 'draft', export_selected: before?.product.export_selected ?? false };
   for (const k of PRODUCT_TEXT_KEYS) p[k] = PRODUCT_NUM.has(k) ? num(f.p[k]) : txt(f.p[k]);
   p.halal = f.p.halal || '미확인';
 
@@ -221,12 +237,17 @@ export function to_rows(f: ProductForm, before: ProductDetail | null, today = ne
     id: crypto.randomUUID(), part: x.part.trim(), material: txt(x.material), separable: x.separable || null, sort_order: i + 1,
   }));
 
+  const label_texts: LabelText[] = f.labels.filter((x) => x.text.trim()).map((x, i) => ({
+    id: crypto.randomUUID(), language: x.language.trim() || '영어', pack_level: x.pack_level, item_key: x.item_key,
+    text: x.text.trim(), source: txt(x.source), sort_order: i + 1,
+  }));
+
   const exp_has = EXPORT_TEXT_KEYS.some((k) => f.exp[k].trim() !== '') || !!before?.exportInfo;
   const export_info = exp_has
     ? { ...(before?.exportInfo ?? {}), product_id: f.id, ...Object.fromEntries(EXPORT_TEXT_KEYS.map((k) => [k, EXPORT_NUM.has(k) ? num(f.exp[k]) : txt(f.exp[k])])) }
     : null;
 
-  return { product: p as SaveRows['product'], components, links, ingredients, nutrition, packaging, exportInfo: export_info, statuses: next_statuses(f, base, today) };
+  return { product: p as SaveRows['product'], components, links, ingredients, nutrition, packaging, labelTexts: label_texts, exportInfo: export_info, statuses: next_statuses(f, base, today) };
 }
 
 /** 저장할 때 칸 상태를 정한다. 바뀌지 않은 칸은 원래 상태를 그대로 둔다. */

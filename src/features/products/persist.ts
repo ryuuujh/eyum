@@ -26,6 +26,7 @@ function save_to_sample(r: SaveRows, product_id: string) {
   replace(S.sample_ingredients, (i) => !ids.includes(i.component_id), r.ingredients);
   for (const n of r.nutrition) { const { component_id, ...v } = n; S.sample_nutrition[component_id] = v; }
   replace(S.sample_packaging, (x) => x.product_id !== product_id, r.packaging.map((x) => ({ ...x, product_id: product_id })));
+  replace(S.sample_label_texts, (x) => x.product_id !== product_id, r.labelTexts.map((x) => ({ ...x, product_id: product_id })));
   if (r.exportInfo) replace(S.sample_export, (e) => e.product_id !== product_id, [r.exportInfo as (typeof S.sample_export)[number]]);
   for (const st of r.statuses) {
     const k = (x: { entity_type: string; entity_id: string; field_key: string }) => `${x.entity_type}|${x.entity_id}|${x.field_key}`;

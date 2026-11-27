@@ -1,7 +1,7 @@
 'use server';
 // 제품 저장 (Claude). Supabase가 있으면 DB에, 없으면 예시 데이터(서버 메모리)에 저장한다.
 import { revalidatePath } from 'next/cache';
-import { get_component_library, get_product_detail } from './data';
+import { get_component_library, get_product_detail, set_export_selected } from './data';
 import { persist } from './persist';
 import { to_form, to_rows, validate, type ProductForm } from './form';
 import { read_request_file, type Change } from './import_request';
@@ -22,7 +22,7 @@ export async function save_product(f: ProductForm): Promise<SaveResult> {
   const known = new Set(before?.components.map((c) => c.component.id) ?? []);
   const shared = (await get_component_library()).filter((l) => f.comps.some((c) => c.id === l.component.id) && !known.has(l.component.id));
   const prev_base = shared.length ? {
-    ...(before ?? { product: { id: f.id } as never, exportInfo: null, packaging: [] }),
+    ...(before ?? { product: { id: f.id } as never, exportInfo: null, packaging: [], labelTexts: [] }),
     components: [...(before?.components ?? []), ...shared.map((l) => ({ component: l.component, nutrition: l.nutrition, amount: 1, unit: (l.component.nutrition_basis === '100mL' ? 'mL' : 'g') as 'g' | 'mL', quantity: 1, sort_order: 0 }))],
     ingredients: [...(before?.ingredients ?? []), ...shared.flatMap((l) => l.ingredients)],
     statuses: [...(before?.statuses ?? []), ...shared.flatMap((l) => l.statuses)],
@@ -89,4 +89,11 @@ export async function send_to_ai(code: string, clean: string) {
   } catch (e) {
     return { changes: [], warnings: [e instanceof Error ? e.message : 'AI 읽기에 실패했어요.'], removed: [] };
   }
+}
+
+/** 목록 · 상세의 "수출할 제품" 체크 */
+export async function toggle_export_selected(code: string, selected: boolean) {
+  await set_export_selected(code, selected);
+  revalidatePath('/products');
+  revalidatePath(`/products/${code}`);
 }

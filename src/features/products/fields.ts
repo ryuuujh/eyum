@@ -33,6 +33,7 @@ export const PRODUCT_FIELDS: FieldDef[] = [
   { key: 'name_en', label: '영문 제품명', uses: ['라벨', '서류'], request: 'package_label', hint: '예: Tteokbokki EZ · 포장 뒷면 · 수출용 라벨에 있어요' },
   { key: 'net_content_value', label: '총 내용량', uses: ['라벨', '서류'], request: 'package_label' },
   { key: 'storage_condition', label: '보관 조건', uses: ['규제', '라벨'], request: 'package_label', hint: '상온 · 상온 / 냉장 / 냉동 중 하나, 포장의 보관 방법에 있어요' },
+  { key: 'date_type', label: '기한 종류', uses: ['라벨'], request: 'package_label', hint: '소비기한 / 품질유지기한 중 하나' },
   { key: 'date_period', label: '소비기한', uses: ['라벨'], request: 'package_label', hint: '예: 12개월 · 포장 표시면 · 제품 규격서에 있어요' },
   { key: 'manufacturer_name', label: '완제품 제조원', uses: ['라벨', '서류'], request: 'package_label', hint: '예: ○○식품(주) · 포장 뒷면 "제조원"에 있어요 (최종으로 만들거나 포장한 곳)' },
   { key: 'finished_country', label: '완제품 제조국', uses: ['규제', '라벨', '서류'], request: 'package_label', hint: '예: 대한민국' },
@@ -41,6 +42,8 @@ export const PRODUCT_FIELDS: FieldDef[] = [
   { key: 'storage_text', label: '보관 방법', uses: ['라벨'], request: 'package_label', hint: '예: 직사광선을 피해 서늘한 곳에 보관' },
   { key: 'cooking_en', label: '조리방법', uses: ['라벨'], request: 'package_label' },
   { key: 'packaging', label: '포장 재질', uses: ['라벨'], request: 'package_label' },
+  { key: 'pack_size', label: '포장 크기', uses: ['라벨', '서류'], request: 'package_label', hint: '가로 × 세로 × 높이 mm · 포장 전개도 · 포장 사양에 있어요' },
+  { key: 'label_size', label: '라벨 부착 면적', uses: ['라벨'], request: 'package_label', hint: '가로 × 세로 mm · 현지어 스티커를 붙일 수 있는 곳' },
 ];
 
 export const COMPONENT_FIELDS: FieldDef[] = [
@@ -50,23 +53,37 @@ export const COMPONENT_FIELDS: FieldDef[] = [
   { key: 'food_type_kr', label: '식품유형', uses: ['규제', '라벨'], request: 'component_spec' },
   { key: 'ingredients', label: '원재료', uses: ['규제', '라벨'], request: 'component_spec' },
   { key: 'animal_ingredient', label: '동물성 원료', uses: ['규제'], request: 'component_spec' },
+  { key: 'cross_contact', label: '교차접촉 알레르기', uses: ['라벨'], request: 'component_spec', hint: '예: 같은 시설에서 대두 · 밀 사용 · 없으면 "해당 없음"' },
   { key: 'unit_weight_g', label: '한 포 실중량', uses: ['규제', '라벨'], request: 'component_spec' },
   { key: 'nutrition_source', label: '영양성분 자료', uses: ['규제', '라벨'], request: 'component_spec' },
 ];
 
 export const EXPORT_FIELDS: FieldDef[] = [
   { key: 'hs6', label: 'HS 6자리', uses: ['규제', '서류'], request: 'price_pack' },
+  // HSK 10자리는 HS 찾기(HsCodePicker)로 확정할 때만 채워진다. 화면에서 직접 적지 않으므로 할 일에서는 뺌
+  { key: 'hsk10', label: 'HSK 10자리', uses: ['서류'], request: 'price_pack', optional: true },
   { key: 'unit_price', label: '단가', uses: ['서류'], request: 'price_pack', internal: true },
+  { key: 'currency', label: '통화', uses: ['서류'], request: 'price_pack', hint: 'USD · EUR · SGD · KRW' },
   { key: 'units_per_ctn', label: '입수 · CTN', uses: ['서류'], request: 'price_pack' },
+  { key: 'ctn_net_kg', label: 'CTN 순중량', uses: ['서류'], request: 'price_pack' },
+  { key: 'ctn_gross_kg', label: 'CTN 총중량', uses: ['서류'], request: 'price_pack' },
+  { key: 'ctn_size', label: 'CTN 크기', uses: ['서류'], request: 'price_pack', hint: '가로 × 세로 × 높이 cm' },
   { key: 'unit_gross_g', label: '1개당 총중량', uses: ['서류'], request: 'price_pack' },
   { key: 'pallet_ctn_count', label: '팔레트 적재', uses: ['서류'], request: 'price_pack' },
 ];
 
 /** 등록 · 수정 화면에서 이 칸이 있는 탭 (할 일 → "직접 입력"으로 바로 가기) */
 export type FormTab = 'basic' | 'comps' | 'nutrition' | 'label' | 'export';
-const LABEL_KEYS = new Set(['gtin', 'halal', 'storage_text', 'cooking_en', 'packaging']);
+const LABEL_KEYS = new Set(['gtin', 'halal', 'storage_text', 'cooking_en', 'packaging', 'pack_size', 'label_size']);
 export const FORM_TAB_LABEL: Record<FormTab, string> = { basic: '기본 정보', comps: '구성품', nutrition: '영양성분', label: '표시 정보', export: '수출 · 물류' };
 
 export const form_tab_of = (entity: string, key: string): FormTab =>
   entity === 'component' ? (key === 'nutrition_source' ? 'nutrition' : 'comps')
   : EXPORT_FIELDS.some((d) => d.key === key) ? 'export' : LABEL_KEYS.has(key) ? 'label' : 'basic';
+
+/** 여러 DB 칸을 묶은 칸 (화면 · 할 일 · 통로에서는 칸 하나로 다룬다). 값은 "143 × 143 × 98" 글자, 원값은 숫자 객체 */
+export const COMPOSITE_FIELDS: Record<string, { cols: string[]; names: string[]; unit: string }> = {
+  pack_size: { cols: ['pack_w_mm', 'pack_d_mm', 'pack_h_mm'], names: ['w', 'd', 'h'], unit: 'mm' },
+  label_size: { cols: ['label_w_mm', 'label_h_mm'], names: ['w', 'h'], unit: 'mm' },
+  ctn_size: { cols: ['ctn_l_cm', 'ctn_w_cm', 'ctn_h_cm'], names: ['l', 'w', 'h'], unit: 'cm' },
+};

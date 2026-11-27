@@ -61,6 +61,7 @@ export interface Product {
   claims: string | null;
   pack_w_mm: number | null; pack_d_mm: number | null; pack_h_mm: number | null;
   label_w_mm: number | null; label_h_mm: number | null;
+  export_selected: boolean;           // 다른 탭(서류 등)으로 넘길 수출 제품인지 (목록 · 상세에서 체크)
   status: ProductStatus;
   created_at: string;
   updated_at: string;
@@ -130,4 +131,25 @@ export interface ProductExport {
   unit_gross_g: number | null;
   pallet_l_cm: number | null; pallet_w_cm: number | null;
   pallet_layers: number | null; pallet_ctn_count: number | null;
+}
+
+/** 기존 라벨 문구 (원문 그대로 보관, 라벨 탭이 번역 · 비교에 씀) */
+export type LabelPackLevel = 'unit' | 'outer';   // 개별포장 · 외박스
+export const LABEL_PACK_LABEL: Record<LabelPackLevel, string> = { unit: '개별포장', outer: '외박스' };
+export const LABEL_ITEMS = {
+  product_name: '제품명', net_weight: '내용량', ingredients: '원재료', allergens: '알레르기', instructions: '조리 · 사용 방법',
+  storage: '보관 방법', precaution: '주의 문구', date: '제조일 · 기한', origin: '원산지', nutrition: '영양성분',
+  manufacturer: '제조원', exporter: '수출자', importer: '수입자', other: '기타',
+} as const;
+export type LabelItemKey = keyof typeof LABEL_ITEMS;
+/** 주소가 들어가는 항목: 외부 공유(external=1) 때 빼고, AI로 보내지 않음 */
+export const LABEL_ADDRESS_ITEMS: LabelItemKey[] = ['manufacturer', 'exporter', 'importer'];
+export interface LabelText {
+  id: string;
+  language: string;          // 예: 영어 · 한국어 · 베트남어 (라벨에 적힌 언어)
+  pack_level: LabelPackLevel;
+  item_key: LabelItemKey;
+  text: string;              // 라벨 원문 그대로
+  source: string | null;     // 어느 라벨에서 옮겼는지 (예: 영어 라벨 10.14)
+  sort_order: number;
 }

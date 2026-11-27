@@ -1,6 +1,7 @@
 // 올린 자료의 값을 입력 모델에 넣기 (Claude). 요청 목록 · AI 추출이 같이 쓴다.
 import type { Change } from './import_request';
 import { status_key, type ProductForm } from './form';
+import { COMPOSITE_FIELDS } from './fields';
 
 const first_num = (s: string) => s.replace(/,/g, '').match(/-?\d+(\.\d+)?/)?.[0] ?? '';
 
@@ -23,7 +24,16 @@ export function apply_change(f: ProductForm, c: Change, ai_note?: string) {
     else (comp as unknown as Record<string, string>)[field] = v;
     return;
   }
-  if (field === 'packaging') {
+  if (field in COMPOSITE_FIELDS) {
+    // "143 × 143 × 98" · "143x143x98mm" → 숫자 차례대로
+    const nums = v.replace(/,/g, '').match(/\d+(\.\d+)?/g) ?? [];
+    const target = (field === 'ctn_size' ? f.exp : f.p) as Record<string, string>;
+    COMPOSITE_FIELDS[field].cols.forEach((k, i) => { if (nums[i] != null) target[k] = nums[i]; });
+  } else if (field === 'date_type') {
+    f.p.date_type = /품질/.test(v) ? '품질유지기한' : /소비/.test(v) ? '소비기한' : f.p.date_type;
+  } else if (field === 'currency') {
+    f.exp.currency = v.match(/USD|EUR|SGD|KRW/i)?.[0]?.toUpperCase() ?? f.exp.currency;
+  } else if (field === 'packaging') {
     f.packaging = split_list(v).map((p) => { const [part, ...m] = p.split(/\s+/); return { part, material: m.join(' '), separable: '' as const }; });
   } else if (field === 'net_content_value') {
     f.p.net_content_value = first_num(v);

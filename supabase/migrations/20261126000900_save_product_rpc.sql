@@ -13,7 +13,7 @@ begin
   -- 1. 제품
   insert into products
   select * from jsonb_populate_record(null::products,
-    (payload->'product') || jsonb_build_object('created_at', now(), 'updated_at', now()))
+    jsonb_build_object('export_selected', false) || (payload->'product') || jsonb_build_object('created_at', now(), 'updated_at', now()))
   on conflict (id) do update set
     code = excluded.code, name_ko = excluded.name_ko, name_en = excluded.name_en,
     net_content_value = excluded.net_content_value, net_content_unit = excluded.net_content_unit,
@@ -54,6 +54,12 @@ begin
   insert into product_packaging_parts
   select * from jsonb_populate_recordset(null::product_packaging_parts,
     (select coalesce(jsonb_agg(x || jsonb_build_object('product_id', pid)), '[]') from jsonb_array_elements(coalesce(payload->'packaging', '[]')) x));
+
+  -- 5-1. 기존 라벨 문구
+  delete from product_label_texts where product_id = pid;
+  insert into product_label_texts
+  select * from jsonb_populate_recordset(null::product_label_texts,
+    (select coalesce(jsonb_agg(x || jsonb_build_object('product_id', pid)), '[]') from jsonb_array_elements(coalesce(payload->'labelTexts', '[]')) x));
 
   -- 6. 수출 · 물류
   if jsonb_typeof(payload->'exportInfo') = 'object' then
