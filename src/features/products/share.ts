@@ -38,7 +38,7 @@ export type SharedProduct = {
   // amount × quantity = 제품에 들어가는 양 (예: 떡 100 g × 2봉). nutrition = 성적서 · 라벨에 적힌 원본 값 그대로 (basis 기준)
   components: { name: string; amount: number; unit: string; quantity: number; ingredients: SharedIngredient[];
     nutrition: { basis: '100g' | '100mL'; values: Partial<Record<keyof Nutrition, number | null>>; source: string | null } | null }[];
-  nutrition: NutritionResult;  // 계산값: 구성품 원본 × 양을 더한 값 (반올림 안 함, 소수 둘째 자리). 100g당은 실중량을 모르면 null = 보류
+  nutrition: NutritionResult;  // 계산값: 구성품 원본 × 양을 더한 값 (소수 둘째 자리 · kJ 정수까지만 정리, 국가별 반올림 전). 100g당은 실중량을 모르면 null = 보류
   nutrition_items: { key: keyof Nutrition; label_ko: string; label_en: string; unit: string }[];   // 영양성분 항목명 · 단위 (원본과 계산값이 같은 키를 씀)
   packs: SharedPacks;          // 개별포장 · 외박스 숫자 모음 (CI · PL · 라벨 계산용)
   label_texts: SharedLabelText[];   // 기존 라벨 문구 (원문 그대로). external=1이면 주소가 있는 항목(제조원 · 수출자 · 수입자)은 뺌
