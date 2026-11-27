@@ -17,6 +17,8 @@ import { SUMMARY_PARTS, request_parts } from '@/features/products/excel';
 
 export const dynamic = 'force-dynamic';
 
+const LANGUAGE_LABEL: Record<string, string> = { ko: '한국어', en: '영어', vi: '베트남어', fr: '프랑스어', zh: '중국어', ja: '일본어' };
+
 export default async function ProductDetailPage({ params }: { params: Promise<{ code: string }> }) {
   const { code } = await params;
   const d = await get_product_detail(code);
@@ -54,20 +56,25 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
       {d.labelTexts.length > 0 && (
         <section className="mt-8">
           <h2 className="mb-2 text-base font-semibold">기존 라벨 문구 <span className="text-sm font-normal text-slate-500">(원문 그대로)</span></h2>
-          <table className="w-full text-sm">
-            <thead><tr>{['언어', '포장', '항목', '원문', '출처'].map((h) => <th key={h} className={ui.th}>{h}</th>)}</tr></thead>
-            <tbody>
-              {d.labelTexts.map((x) => (
-                <tr key={x.id} className="border-t border-slate-100 align-top">
-                  <td className="px-3 py-2 whitespace-nowrap">{x.language}</td>
-                  <td className="px-3 py-2 whitespace-nowrap">{LABEL_PACK_LABEL[x.pack_level]}</td>
-                  <td className="px-3 py-2 whitespace-nowrap">{LABEL_ITEMS[x.item_key]}</td>
-                  <td className="px-3 py-2">{x.text}</td>
-                  <td className="px-3 py-2 whitespace-nowrap text-slate-500">{x.source ?? '—'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          {/* 언어별로 묶어서 보여 준다 (같은 언어 안에서는 포장 단위 → 항목 순서 그대로) */}
+          {[...new Set(d.labelTexts.map((x) => x.language))].map((lang) => (
+            <div key={lang} className="mt-4">
+              <h3 className="mb-1 text-sm font-semibold text-slate-700">{LANGUAGE_LABEL[lang.toLowerCase()] ?? lang}</h3>
+              <table className="w-full text-sm">
+                <thead><tr>{['포장', '항목', '원문', '출처'].map((h) => <th key={h} className={ui.th}>{h}</th>)}</tr></thead>
+                <tbody>
+                  {d.labelTexts.filter((x) => x.language === lang).map((x) => (
+                    <tr key={x.id} className="border-t border-slate-100 align-top">
+                      <td className="px-3 py-2 whitespace-nowrap">{LABEL_PACK_LABEL[x.pack_level]}</td>
+                      <td className="px-3 py-2 whitespace-nowrap">{LABEL_ITEMS[x.item_key]}</td>
+                      <td className="px-3 py-2">{x.text}</td>
+                      <td className="px-3 py-2 whitespace-nowrap text-slate-500">{x.source ?? '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ))}
         </section>
       )}
     </main>

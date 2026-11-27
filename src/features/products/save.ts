@@ -7,7 +7,7 @@ import { to_form, to_rows, validate, type ProductForm } from './form';
 import { read_request_file, type Change } from './import_request';
 import { apply_change } from './apply_changes';
 import { ScannedPdfError, extract_from_text, file_to_text } from './extract';
-import { findLeftovers, sanitize } from '@/lib/sanitize';
+import { findLeftovers, maskForAI } from '@/lib/sanitize';
 
 export type SaveResult = { ok: true; code: string } | { ok: false; errors: string[] };
 
@@ -58,34 +58,36 @@ export async function apply_imported(code: string, changes: Change[], source: 'c
 /** 1단계: 파일 · 글 → 민감정보 지운 글 (AI 안 씀). 사람이 이 글을 보고 고친 뒤 보낸다 */
 export async function prepare_text(code: string, data: FormData) {
   const d = await get_product_detail(code);
-  if (!d) return { clean: '', removed: [] as string[], warnings: ['제품을 찾을 수 없어요.'] };
+  if (!d) return { clean: '', masks: {} as Record<string, string>, removed: [] as string[], warnings: ['제품을 찾을 수 없어요.'] };
   let text = String(data.get('text') ?? '');
   let dropped: string[] = [];
   const file = data.get('file');
   if (file instanceof File && file.size > 0) {
-    if (!/\.(txt|csv|eml|md|xlsx|pdf)$/i.test(file.name)) return { clean: '', removed: [], warnings: ['글 · 엑셀 · PDF 파일만 읽을 수 있어요. 사진은 내용을 글로 붙여 넣어 주세요.'] };
+    if (!/\.(txt|csv|eml|md|xlsx|pdf)$/i.test(file.name)) return { clean: '', masks: {}, removed: [], warnings: ['글 · 엑셀 · PDF 파일만 읽을 수 있어요. 사진은 내용을 글로 붙여 넣어 주세요.'] };
     try {
       const r = await file_to_text(file.name, await file.arrayBuffer());
       text = [text, r.text].filter(Boolean).join('\n\n'); dropped = r.dropped;
     } catch (e) {
-      return { clean: '', removed: [], warnings: [e instanceof ScannedPdfError ? e.message : '파일을 열 수 없어요. 다른 파일로 해 주세요.'] };
+      return { clean: '', masks: {}, removed: [], warnings: [e instanceof ScannedPdfError ? e.message : '파일을 열 수 없어요. 다른 파일로 해 주세요.'] };
     }
   }
-  const s = sanitize(text);
+  // 주소 · 연락처 · 단가는 [주소1]처럼 가리고(나중에 되돌림), 배합비는 지운다
+  const s = maskForAI(text);
   const removed = Object.entries(s.removed).map(([k, n]) => `${k} ${n}곳`);
   if (dropped.length) removed.push(`표의 열 ${dropped.join(', ')}`);
   const left = findLeftovers(s.text, { allowPercent: true });
   const warnings = !s.text.trim() ? ['읽을 글이 없어요.']
     : left.length ? [`코드가 못 지운 것 같은 내용이 있어요: ${[...new Set(left.map((l) => `${l.name} "${l.sample}"`))].join(', ')}. 지우지 않으면 AI로 보내지 않아요.`] : [];
-  return { clean: s.text.trim(), removed, warnings };
+  return { clean: s.text.trim(), masks: s.masks, removed, warnings };
 }
 
-/** 2단계: 사람이 확인한 글만 AI로. 한 번 더 지우기 규칙을 거친다 (사람이 붙여 넣은 내용 대비) */
-export async function send_to_ai(code: string, clean: string) {
+/** 2단계: 사람이 확인한 글만 AI로. 한 번 더 지우기 규칙을 거친다 (사람이 붙여 넣은 내용 대비).
+ *  masks(가린 표시 → 원래 값)는 AI로 보내지 않고, AI 답을 되돌릴 때만 쓴다 */
+export async function send_to_ai(code: string, clean: string, masks: Record<string, string> = {}) {
   const d = await get_product_detail(code);
   if (!d) return { changes: [] as Change[], warnings: ['제품을 찾을 수 없어요.'], removed: [] as string[] };
   try {
-    return await extract_from_text(clean, d);
+    return await extract_from_text(clean, d, [], masks);
   } catch (e) {
     return { changes: [], warnings: [e instanceof Error ? e.message : 'AI 읽기에 실패했어요.'], removed: [] };
   }

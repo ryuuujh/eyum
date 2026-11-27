@@ -1,4 +1,5 @@
 import { format_hs_code } from "@/features/products/hs_format";
+import { ACCESSORY_DOC_KEYS } from "@/features/products/doc_keys";
 import { STATUS_LABEL, WAIT_REASON_LABEL, type FieldStatusValue, type WaitReason } from "@/features/products/types";
 
 const parent_fields = ["item_name", "item_name_en"] as const;
@@ -6,6 +7,9 @@ const option_fields = [
   "option_name", "management_code", "hs6", "hsk10", "material", "origin",
   "unit_weight_g", "units_per_ctn", "ctn_net_kg", "ctn_gross_kg", "ctn_l_cm", "ctn_w_cm", "ctn_h_cm",
 ] as const;
+// CTN 크기는 제품 통로처럼 칸 하나(ctn_size)로 묶어 준다. 상태는 세 칸 중 가장 나쁜 것
+const ctn_cols = ["ctn_l_cm", "ctn_w_cm", "ctn_h_cm"] as const;
+const status_rank: Record<FieldStatusValue, number> = { missing: 0, on_hold: 1, needs_check: 2, not_applicable: 3, confirmed: 4 };
 const internal_fields = ["unit_price", "currency"] as const;
 type FieldKey = (typeof parent_fields)[number] | (typeof option_fields)[number] | (typeof internal_fields)[number];
 type Raw = string | number | null;
@@ -31,7 +35,8 @@ export type StatusRow = {
 };
 
 export function build_document_option(option: DocumentOption, statuses: StatusRow[], external: boolean) {
-  const fields = [...parent_fields, ...option_fields, ...(external ? [] : internal_fields)].map(key => {
+  const keys = [...parent_fields, ...option_fields.filter(k => !(ctn_cols as readonly string[]).includes(k)), ...(external ? [] : internal_fields)];
+  const fields = keys.map(key => {
     const parent = key === "item_name" || key === "item_name_en";
     const scope = parent ? "accessory" : "option";
     const record = statuses.find(row => row.entity_type === (parent ? "accessory" : "accessory_option")
@@ -40,9 +45,9 @@ export function build_document_option(option: DocumentOption, statuses: StatusRo
     const status = record?.status ?? (raw === null ? "missing" : "needs_check");
     const wait_reason = record?.wait_reason ?? null;
     return {
-      key: `${scope}.${key}`, scope, component: null, field: key, label: labels[key],
+      key: `${scope}.${key}`, scope, component: null, field: key as string, doc_key: ACCESSORY_DOC_KEYS[key] ?? null, label: labels[key],
       value: (key === "hs6" || key === "hsk10") && typeof raw === "string" ? format_hs_code(raw) : raw === null ? null : String(raw),
-      raw,
+      raw: raw as unknown,
       status,
       status_label: STATUS_LABEL[status],
       usable: status === "confirmed" || status === "not_applicable",
@@ -54,6 +59,24 @@ export function build_document_option(option: DocumentOption, statuses: StatusRo
   });
   const n = (k: FieldKey) => (option[k] == null || option[k] === "" ? null : Number(option[k]));
   const size = { l: n("ctn_l_cm"), w: n("ctn_w_cm"), h: n("ctn_h_cm") };
+  // 묶은 칸 ctn_size (제품 통로와 같은 모양: value "45 × 30 × 30 cm", raw { l, w, h, unit })
+  {
+    const rows = ctn_cols.map(c => statuses.find(row => row.entity_type === "accessory_option" && row.entity_id === option.option_id && row.field_key === c));
+    const has = Object.values(size).some(v => v != null);
+    const each = ctn_cols.map((c, i) => rows[i]?.status ?? (option[c] == null || option[c] === "" ? "missing" : "needs_check")) as FieldStatusValue[];
+    const status = each.reduce((a, b) => (status_rank[b] < status_rank[a] ? b : a));
+    const wait_reason = rows.find(r => r?.wait_reason)?.wait_reason ?? null;
+    const note = rows.map(r => r?.note).filter(Boolean).join(" / ") || null;
+    const at = fields.findIndex(f => f.field === "ctn_gross_kg") + 1;
+    fields.splice(at, 0, {
+      key: "option.ctn_size", scope: "option", component: null, field: "ctn_size", doc_key: "ctn_size", label: "CTN 크기",
+      value: has ? `${[size.l, size.w, size.h].map(v => v ?? "?").join(" × ")} cm` : null,
+      raw: has ? { ...size, unit: "cm" } : null,
+      status, status_label: STATUS_LABEL[status], usable: status === "confirmed" || status === "not_applicable",
+      wait_reason, wait_label: wait_reason ? WAIT_REASON_LABEL[wait_reason] : null,
+      note: external ? null : note, uses: ["서류"],
+    });
+  }
   // 제품 통로(SharedPacks)와 같은 모양. 부속물품은 개별포장 크기 · 라벨 면적 · 팔레트 정보가 없어 null
   const packs = {
     unit: { net_content: null, net_unit: null, gross_g: n("unit_weight_g"), size_mm: null, label_area_mm: null },

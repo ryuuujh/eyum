@@ -13,6 +13,7 @@ export function ImportRequest({ code, initialMode = 'request' }: { code: string;
   const [text, setText] = useState('');
   const [removed, setRemoved] = useState<string[]>([]);
   const [clean, setClean] = useState<string | null>(null);   // 지운 뒤 AI로 보낼 글 (사람이 확인 · 수정)
+  const [masks, setMasks] = useState<Record<string, string>>({});   // 가린 표시 → 원래 값 (AI로 안 보냄, 답을 되돌릴 때만)
   const [changes, setChanges] = useState<Change[] | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [picked, setPicked] = useState<string[]>([]);
@@ -32,14 +33,15 @@ export function ImportRequest({ code, initialMode = 'request' }: { code: string;
     const fd = new FormData(); fd.append('text', text); if (file) fd.append('file', file);
     start(async () => {
       const r = await prepare_text(code, fd);
-      setClean(r.clean || null); setRemoved(r.removed); setWarnings(r.warnings); setChanges(null); setErrors([]);
+      setClean(r.clean || null); setMasks(r.masks); setRemoved(r.removed); setWarnings(r.warnings); setChanges(null); setErrors([]);
     });
   };
   const send = () => start(async () => {
-    const r = await send_to_ai(code, clean ?? '');
-    setChanges(r.changes); setWarnings(r.warnings); setPicked(r.changes.map((c) => c.key)); setErrors([]);
+    const r = await send_to_ai(code, clean ?? '', masks);
+    // AI를 부르지 못했으면(키 없음 · 차단 등) "저장 전 확인할 내용 0개" 대신 안내만 보여 준다
+    setChanges(r.changes.length === 0 && r.warnings.length > 0 ? null : r.changes); setWarnings(r.warnings); setPicked(r.changes.map((c) => c.key)); setErrors([]);
   });
-  const switch_mode = (m: 'request' | 'text') => { setMode(m); setChanges(null); setWarnings([]); setRemoved([]); setClean(null); };
+  const switch_mode = (m: 'request' | 'text') => { setMode(m); setChanges(null); setWarnings([]); setRemoved([]); setClean(null); setMasks({}); };
   const apply = () => start(async () => {
     const r = await apply_imported(code, (changes ?? []).filter((c) => picked.includes(c.key)), mode === 'text' ? 'ai' : 'company');
     if (!r.ok) { setErrors(r.errors); return; }
@@ -66,7 +68,8 @@ export function ImportRequest({ code, initialMode = 'request' }: { code: string;
           <textarea rows={8} value={text} onChange={(e) => setText(e.target.value)}
             placeholder="제조사에서 받은 메일 본문이나 사양서 내용을 붙여 넣어 주세요."
             className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-[#2f5bd3]" />
-          <p className="mt-2 text-xs text-slate-500">먼저 코드가 주소 · 연락처 · 단가 · 배합비를 지운 글을 보여드려요. 확인하고 직접 고친 뒤에 AI로 보내요. 스캔본 PDF · 사진은 받지 않아요. 배합비가 들어 있는 자료는 가리고 올려 주세요.</p>
+          <p className="mt-2 text-xs text-slate-500">먼저 코드가 주소 · 연락처 · 단가를 가리고 배합비를 지운 글을 보여드려요. 확인하고 직접 고친 뒤에 AI로 보내요. 스캔본 PDF · 사진은 받지 않아요.</p>
+          <ForbiddenNotice />
           <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
             <label className="cursor-pointer text-sm text-[#2f5bd3]">
               또는 파일 고르기 (PDF · 엑셀 · .txt · .eml)
@@ -81,14 +84,14 @@ export function ImportRequest({ code, initialMode = 'request' }: { code: string;
         <div className="mt-5 rounded-lg bg-white p-5 ring-1 ring-slate-200">
           <h2 className="text-base font-bold">AI로 보낼 글 확인</h2>
           <p className="mt-1 text-sm text-slate-600">
-            아래 글만 AI로 보내요. 코드가 지운 자리는 [주소] · [금액]처럼 바뀌어 있어요.
+            아래 글만 AI로 보내요. 주소 · 연락처 · 단가는 [주소1] · [금액1]처럼 가려져 있고, AI가 그 표시를 칸에 넣으면 저장 전 확인 화면에서 원래 값으로 되돌려 보여드려요. 원래 값은 AI로 보내지 않아요.
             <b> 지워지지 않은 기밀(해외 주소, 통화 표시 없는 가격, 함량 % 등)이 보이면 여기서 직접 지워 주세요.</b>
           </p>
-          <p className="mt-3 rounded-md bg-slate-50 px-3 py-2 text-xs text-slate-600">코드가 지운 것: {removed.length ? removed.join(', ') : '없음'}</p>
+          <p className="mt-3 rounded-md bg-slate-50 px-3 py-2 text-xs text-slate-600">코드가 가리거나 지운 것: {removed.length ? removed.join(', ') : '없음'}</p>
           <textarea rows={12} value={clean} onChange={(e) => { setClean(e.target.value); setChanges(null); }}
             className="mt-3 w-full rounded-md border border-slate-300 px-3 py-2 font-mono text-xs leading-relaxed outline-none focus:border-[#2f5bd3]" />
           <div className="mt-3 flex items-center justify-between gap-3">
-            <button onClick={() => { setClean(null); setChanges(null); setRemoved([]); }} className="text-sm text-slate-500 hover:underline">← 다른 자료 고르기</button>
+            <button onClick={() => { setClean(null); setMasks({}); setChanges(null); setRemoved([]); }} className="text-sm text-slate-500 hover:underline">← 다른 자료 고르기</button>
             <button disabled={pending || !clean.trim()} onClick={send} className="rounded-md bg-[#2f5bd3] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
               {pending ? 'AI가 읽는 중…' : '확인했어요, AI로 보내기'}
             </button>
@@ -120,7 +123,10 @@ export function ImportRequest({ code, initialMode = 'request' }: { code: string;
                       <td className="whitespace-nowrap px-4 py-3 text-slate-600">{c.scope}</td>
                       <td className="whitespace-nowrap px-4 py-3 font-semibold">{c.label}</td>
                       <td className="px-4 py-3 text-slate-500">{c.current ?? '—'}</td>
-                      <td className="whitespace-pre-line px-4 py-3">{c.value ?? <span className="text-slate-600">{ANSWER_LABEL[c.answer]}</span>}</td>
+                      <td className="whitespace-pre-line px-4 py-3">
+                        {c.value ?? <span className="text-slate-600">{ANSWER_LABEL[c.answer]}</span>}
+                        {c.restored && <span className="mt-1 block text-xs text-slate-500">가렸던 값을 되돌렸어요</span>}
+                      </td>
                       {mode === 'text' && <td className="px-4 py-3 text-xs text-slate-500">{c.evidence}</td>}
                     </tr>
                   ))}
@@ -139,6 +145,26 @@ export function ImportRequest({ code, initialMode = 'request' }: { code: string;
           )}
         </section>
       )}
+    </div>
+  );
+}
+
+/** 올리면 안 되는 자료 안내 (기밀 업로드 방지, 11/27 채채 결정) */
+function ForbiddenNotice() {
+  return (
+    <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+      <p className="font-semibold">이런 내용은 올리지 마세요</p>
+      <ul className="mt-1 list-disc pl-5 text-xs leading-relaxed">
+        <li>배합비 · 원료별 정확한 함량(%) (라벨에 표기된 함량은 괜찮아요)</li>
+        <li>원료 공급처 · 제조 방법 · 공정 조건</li>
+        <li>원가 계산표 · 거래 조건 (단가 한 줄은 코드가 가려요)</li>
+        <li>품목제조보고서 (배합비가 들어 있어요)</li>
+      </ul>
+      <p className="mt-2 text-xs leading-relaxed">
+        꼭 필요한 자료에 이런 내용이 섞여 있으면 먼저 가려 주세요.
+        엑셀 · 글 파일은 그 줄 · 열을 지운 사본을 올려 주세요. PDF 위에 검은 상자나 마스킹을 덧그리면 글자가 그대로 남아 코드가 읽어요. 이럴 땐 필요한 부분만 복사해 붙여 넣어 주세요.
+        종이 자료는 해당 부분을 마스킹 테이프로 가린 뒤 필요한 글만 옮겨 적어 주세요 (사진 · 스캔본은 받지 않아요).
+      </p>
     </div>
   );
 }

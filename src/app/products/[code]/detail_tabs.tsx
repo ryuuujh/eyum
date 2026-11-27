@@ -50,9 +50,12 @@ export function DetailTabs({ code, view, nutrition, components }: { code: string
       {tab === 'todo' ? (
         <div>
           <p className="mt-6 rounded-lg bg-white px-4 py-3 text-sm ring-1 ring-slate-200">
-            아직 끝나지 않은 일이 <b>{view.total}개</b> 있어요. 비어 있는 칸 {empty_count}개는 자료를 모아 채워야 하고,
-            값이 있는 {view.checks.length}개는 맞는지 확인하면 돼요.
-            {view.waiting.length > 0 && <> 나머지 {view.waiting.length}개는 답을 기다리는 중이에요.</>}
+            {view.total === 0 ? <>할 일이 모두 끝났어요. 모든 칸이 확인됐어요.</> : <>
+              아직 끝나지 않은 일이 <b>{view.total}개</b> 있어요.
+              {empty_count > 0 && <> 비어 있는 칸 {empty_count}개는 자료를 모아 채워야 해요.</>}
+              {view.checks.length > 0 && <> 값이 있는 {view.checks.length}개는 맞는지 확인하면 돼요.</>}
+              {view.waiting.length > 0 && <> 나머지 {view.waiting.length}개는 답을 기다리는 중이에요.</>}
+            </>}
           </p>
 
           <Section step="먼저" title="모아야 할 자료" count={view.requests.length}>

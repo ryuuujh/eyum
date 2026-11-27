@@ -1,6 +1,6 @@
 // 메일 · 사양서 글을 AI가 읽어 칸 값 뽑기 (Claude)
-// 순서: ① 코드로 주소 · 연락처 · 단가 · 배합비 지우기 → ② 칸 목록(이름만, ID 없이)과 함께 AI에 보내기
-//       → ③ 돌아온 값을 미리보기로 → 사람이 고른 것만 저장 (상태는 "확인 필요")
+// 순서: ① 코드로 주소 · 연락처 · 단가는 [주소1]처럼 가리고 배합비는 지우기 → ② 칸 목록(이름만, ID 없이)과 함께 AI에 보내기
+//       → ③ 돌아온 값의 가린 표시를 서버에서 원래 값으로 되돌려 미리보기로 → 사람이 고른 것만 저장 (상태는 "확인 필요")
 // AI: OpenAI (팀 결정 11/26). 환경 설정에 OPENAI_API_KEY · OPENAI_MODEL. AI를 바꾸면 callModel()만 고친다.
 import 'server-only';
 import OpenAI from 'openai';
@@ -8,7 +8,7 @@ import { zodTextFormat } from 'openai/helpers/zod';
 import { extractText, getDocumentProxy } from 'unpdf';
 import ExcelJS from 'exceljs';
 import { z } from 'zod';
-import { findLeftovers, sanitize, sanitizeTable } from '@/lib/sanitize';
+import { checkMasks, findLeftovers, restoreMasks, sanitize, sanitizeTable } from '@/lib/sanitize';
 import type { ProductDetail } from './data';
 import type { Change } from './import_request';
 import { build_detail_view } from './view';
@@ -26,16 +26,18 @@ export type ExtractResult = z.infer<typeof Result>;
 const SYSTEM = `너는 식품 수출 서류 담당자를 돕는다. 제조사 등에서 받은 메일 · 사양서 글에서 제품 정보 칸에 들어갈 값을 찾아 준다.
 규칙:
 - 자료에 분명히 적힌 값만 적는다. 추측하거나 계산하지 않는다. 없으면 그 칸은 빼고 보낸다.
-- [주소] [전화] [금액] [배합비 제거됨] 같은 표시는 일부러 지운 자리다. 그 자리의 값을 짐작하지 않는다.
+- [주소1] [전화2] [금액1] 같은 번호 붙은 표시는 일부러 가린 값이다. 어떤 칸의 값이 그 자리에 있으면 표시를 그대로 값으로 적는다 (예: 단가 칸 값 "[금액1]"). 가린 값을 짐작하거나 바꾸지 않는다.
+- [주소] [배합비 제거됨]처럼 번호 없는 표시는 지운 자리다. 그 자리의 값은 적지 않는다.
 - 구성품이 여러 개면 칸의 구성품 이름을 보고 맞는 구성품의 값만 넣는다.
 - 원재료는 많이 든 순서대로 한 줄에 하나씩 적고, 원산지는 괄호에 넣는다. 하위 원료는 줄 앞에 "  - "를 붙인다. 함량(%)은 자료에 라벨 표기로 적혀 있을 때만 남긴다.
 - 숫자 칸은 단위까지 적는다 (예: 7 g, 24개).`;
 
-export type Catalog = { id: string; key: string; scope: string; label: string; current: string | null }[];
+export type Catalog = { id: string; key: string; scope: string; label: string; current: string | null; internal?: boolean }[];
 
 export function catalog_for(d: ProductDetail): Catalog {
-  const items = build_detail_view(d).info.flatMap((s) => s.items).filter((t) => !t.def.internal);   // 단가 같은 내부 칸은 AI에 묻지 않음
-  return items.map((t, i) => ({ id: `f${i + 1}`, key: t.key, scope: t.scope, label: t.def.label, current: t.value }));
+  // 단가 같은 내부 칸도 묻되, 지금 값은 AI에 보여 주지 않는다. AI는 가린 표시([금액1])만 적을 수 있다
+  const items = build_detail_view(d).info.flatMap((s) => s.items);
+  return items.map((t, i) => ({ id: `f${i + 1}`, key: t.key, scope: t.scope, label: t.def.label, current: t.value, internal: t.def.internal }));
 }
 
 /** 올린 파일 → 글. 표는 막힌 열(배합 · 단가 · 주소 등)을 먼저 뺀다 */
@@ -72,7 +74,7 @@ export class ScannedPdfError extends Error {
 
 async function call_model(text: string, catalog: Catalog, product_name: string): Promise<ExtractResult> {
   const client = new OpenAI();
-  const list = catalog.map((c) => `${c.id} | ${c.scope} | ${c.label}${c.current ? ` | 지금 값: ${c.current}` : ''}`).join('\n');
+  const list = catalog.map((c) => `${c.id} | ${c.scope} | ${c.label}${c.internal ? ' | 가린 표시로만 적기' : c.current ? ` | 지금 값: ${c.current}` : ''}`).join('\n');
   const res = await client.responses.parse({
     model: process.env.OPENAI_MODEL!,
     instructions: SYSTEM,
@@ -84,20 +86,26 @@ async function call_model(text: string, catalog: Catalog, product_name: string):
   return res.output_parsed;
 }
 
-/** AI 답 → 미리보기용 변경 목록 (없는 칸 번호 · 같은 값은 버림) */
-export function to_changes(r: ExtractResult, catalog: Catalog): Change[] {
+/** AI 답 → 미리보기용 변경 목록 (없는 칸 번호 · 같은 값은 버림). 가린 표시는 여기서 원래 값으로 되돌린다 */
+export function to_changes(r: ExtractResult, catalog: Catalog, masks: Record<string, string> = {}): Change[] {
   const by_id = new Map(catalog.map((c) => [c.id, c]));
   const out: Change[] = [];
   for (const f of r.fields) {
     const c = by_id.get(f.id.trim());
-    const v = f.value.trim();
-    if (!c || !v || v === c.current || out.some((x) => x.key === c.key)) continue;
-    out.push({ key: c.key, scope: c.scope, label: c.label, current: c.current, value: v, answer: '', evidence: f.evidence.slice(0, 80) });
+    if (!c) continue;
+    const val = restoreMasks(f.value.trim(), masks);
+    const v = val.text.trim();
+    // 내부 칸은 가린 표시에서 되돌린 값만 받는다 (AI가 내부 값을 지어내지 못하게)
+    if (c.internal && !val.restored.length) continue;
+    if (!v || v === c.current || out.some((x) => x.key === c.key)) continue;
+    const ev = f.evidence;   // 근거 문장은 가린 표시 그대로 둔다 (확인 메모로 저장되므로)
+    out.push({ key: c.key, scope: c.scope, label: c.label, current: c.current, value: v, answer: '', evidence: ev.slice(0, 80), restored: val.restored.length > 0 || undefined });
   }
   return out;
 }
 
-export async function extract_from_text(raw: string, d: ProductDetail, dropped: string[] = []) {
+export async function extract_from_text(raw: string, d: ProductDetail, dropped: string[] = [], masks_in: unknown = {}) {
+  const masks = checkMasks(masks_in);
   const s = sanitize(raw);
   const removed = Object.entries(s.removed).map(([k, n]) => `${k} ${n}곳`);
   if (dropped.length) removed.push(`표의 열 ${dropped.join(', ')}`);
@@ -119,5 +127,5 @@ export async function extract_from_text(raw: string, d: ProductDetail, dropped: 
   }
   const others = r.mentioned_products.filter((n) => n && !n.includes(d.product.name_ko) && !d.components.some((c) => n.includes(c.component.name)));
   if (others.length) warnings.push(`자료에 다른 제품(${others.join(', ')})도 나와요. 이 제품 값이 맞는지 꼭 확인해 주세요.`);
-  return { changes: to_changes(r, catalog), warnings, removed };
+  return { changes: to_changes(r, catalog, masks), warnings, removed };
 }

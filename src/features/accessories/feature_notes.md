@@ -39,7 +39,7 @@
 
 - 두 상세 응답 모두 `item_type`(`food` · `accessory`), `item_id`, `name_ko`, `for`, `external`, `summary`, `fields[]`, `packs`를 준다. 판정은 `fields[].usable`만 쓴다.
 - 숫자 계산은 `packs`(같은 모양): 개당 중량 `packs.unit.gross_g`, CTN 입수 · 순중량 · 총중량 · 크기 `packs.outer.units_per_ctn · net_kg · gross_kg · size_cm{l,w,h}`. 부속물품에 없는 값은 null.
-- `fields[].field` 이름이 다른 것 (상태 · usable을 볼 때): 개당 중량 제품 `unit_gross_g` ↔ 부속물품 `unit_weight_g`, 원산지 제품 `finished_country`(완제품 제조국) ↔ `origin`, CTN 크기 제품 `ctn_size`(한 칸) ↔ `ctn_l_cm` · `ctn_w_cm` · `ctn_h_cm`, 영문명 제품 `name_en` ↔ `item_name_en`. HS(`hs6` · `hsk10`) · CTN(`units_per_ctn` · `ctn_net_kg` · `ctn_gross_kg`) · 가액(`unit_price` · `currency`)은 같은 이름.
+- `fields[].field`는 DB 칸 이름이라 제품 · 부속물품이 다르다 (개당 중량 `unit_gross_g` ↔ `unit_weight_g`, 원산지 `finished_country` ↔ `origin`, 영문명 `name_en` ↔ `item_name_en`). **서류 탭은 `fields[].doc_key`로 찾는다** (11/27, `src/features/products/doc_keys.ts`): `name_ko` · `name_en` · `hs6` · `hsk10` · `origin_country` · `unit_price` · `currency` · `units_per_ctn` · `ctn_net_kg` · `ctn_gross_kg` · `ctn_size` · `unit_gross_g`. 부속물품 CTN 크기도 제품처럼 칸 하나(`option.ctn_size`, 원값 `{ l, w, h, unit: 'cm' }`, 상태는 세 칸 중 가장 나쁜 것)로 준다.
 - 목록: 제품 `GET /api/products?selected=1`은 가벼운 목록(code · item_id), 부속물품 `GET /api/accessories?selected=1`은 상세 배열.
 
 ## 공식 HS 데이터 반자동 갱신과 잇는 곳 (11/27)

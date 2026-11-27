@@ -7,12 +7,14 @@ import { get_product_detail, get_products, type ProductDetail } from './data';
 import { build_detail_view } from './view';
 import { calc_nutrition, type NutritionResult } from './nutrition';
 import { EXPORT_FIELDS, type UseTab } from './fields';
+import { FOOD_DOC_KEYS, type DocKey } from './doc_keys';
 
 export type SharedField = {
   key: string;                 // 'product.name_en' · 'component.<구성품 이름>.ingredients' · 'export.hs6'
   scope: 'product' | 'component' | 'export';
   component: string | null;    // 구성품 칸이면 구성품 이름
   field: string;               // DB 칸 이름 (field_status.field_key)
+  doc_key: DocKey | null;      // 서류 탭 공통 이름 (제품 · 부속물품이 같음, doc_keys.ts). 서류에 안 쓰는 칸은 null
   label: string;               // 화면 이름
   value: string | null;        // 보여 줄 값 (화면용 글자, 예: "1902.30" · "226g" · "143 × 143 × 98 mm"). 없으면 null
   raw: unknown;                // 계산용 원값 (숫자, HS는 숫자만 "190230", 묶은 칸은 { w, d, h, unit } 객체). 없으면 null
@@ -81,7 +83,7 @@ export function to_shared(d: ProductDetail, opt: { for?: UseTab | null; external
       const reason = (t.row?.wait_reason ?? null) as WaitReason | null;
       fields.push({
         key: comp ? `component.${comp.name}.${field}` : `${scope}.${field}`,
-        scope, component: comp?.name ?? null, field, label: t.def.label, value,
+        scope, component: comp?.name ?? null, field, doc_key: comp ? null : FOOD_DOC_KEYS[field] ?? null, label: t.def.label, value,
         raw: value == null ? null : t.raw,
         status: t.status, status_label: STATUS_LABEL[t.status],
         usable: t.status === 'confirmed' || t.status === 'not_applicable',

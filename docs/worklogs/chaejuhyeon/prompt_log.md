@@ -97,3 +97,10 @@
 - **반영 파일:** `scripts/hs_refresh_cli.py`(Next 서버가 부르는 입구, JSON 입출력, 올린 파일 이름을 버전 정보에 기록), `src/features/products/hs_refresh.ts`(작업자 실행 · 안전장치 · 비교 결과 해시 · 오류 한국어), `src/app/products/hs_data/upload/route.ts`(엑셀 받기 — 서버 액션 1MB 제한 때문에 일반 요청 처리기, 임시 폴더 처리 후 삭제), `hs_data_actions.ts`(지금 확인 · 승인), `page.tsx`(확인 · 갱신 칸, 비교 상자, 승인 기록), `scripts/run_hs_check.ps1` · `register_hs_check_task.ps1`(정기 확인 스크립트).
 - **판단:** 승인 직전에 다시 비교해 화면에서 본 결과와 다르면 막음. 갱신 기능은 로컬 Supabase + 비운영 + `HS_REFRESH_DATABASE_URL`일 때만 켜짐(권한 정해지면 권한 검사로 교체). 작업자에게는 필요한 환경 변수만 넘김(AI 키 안 넘김). 정기 확인은 하루 한 번 실행하고 간격(HSK 7일 · 표준품명 한 달)은 DB가 판단.
 - **채주현 결정:** PC 작업 스케줄러에는 등록하지 않음. 스크립트만 두고 배포 서버가 정해지면 그쪽 정기 실행으로.
+
+## 2026-11-27 / 기밀 업로드 방지 · 탭 마무리 1차
+
+- **요청:** 기밀 업로드 방지는 "금지 자료 목록(이런 내용은 올리지 마세요, 마스킹 테이프로 가리세요)" + 강사님 제안 "기밀값은 AI 전송 전에 가린 뒤 결과를 받으면 원래 값으로 복원". 그다음 남은 일 1번(우리 쪽 마무리)부터.
+- **반영 파일:** `src/lib/sanitize.ts`(`maskForAI` · `restoreMasks` · `checkMasks`, 가린 표시는 남은 흔적 검사에서 제외), `src/features/products/extract.ts`(AI 지시문, 내부 칸도 칸 목록에 넣되 지금 값은 안 보여 줌, 답을 되돌리기), `save.ts`(1단계에서 가리기, 2단계에 표시표 전달), `import_request.ts`(`restored` 표시, 통화 대문자), `src/app/products/[code]/import/import_request_form.tsx`(금지 자료 안내, 되돌린 값 표시, AI를 못 불렀을 때 0개 표 대신 안내만), `src/features/products/doc_keys.ts`(신규) · `share.ts` · `src/features/accessories/document_fields.ts`(서류 탭 공통 칸 이름 `doc_key`, 부속물품 CTN 크기 한 칸), `detail_tabs.tsx`(할 일 요약에 0개 문장 빼기), `fields.ts`(보관 조건 힌트), `[code]/page.tsx`(라벨 문구 언어별), `tests/sanitize_test.mts`, 명세 · `feature_notes.md`.
+- **판단:** 가리기 대상은 "내부만" 정보(주소 · 연락처 · 단가 · 사업자번호)만. 배합비는 "받지 않음"이라 되돌리지 않고 지움. 원래 값 표(masks)는 사용자 화면 ↔ 우리 서버 사이에서만 오가고 AI로 안 감. 단가 같은 내부 칸은 가린 표시에서 되돌린 값만 받아 AI가 값을 지어내지 못하게 함. 근거 문장은 확인 메모로 저장되므로 가린 표시 그대로 둠. 부속물품 HS 찾기(`prepareForAI`)는 주소 · 단가가 필요 없어 지금처럼 지우기만.
+- **남은 점:** 실제 AI 호출은 OpenAI 결제 뒤(채주현이 먼저 결제 예정). 스캔본 · 사진은 계속 받지 않음.

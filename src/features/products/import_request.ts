@@ -12,6 +12,7 @@ export type Change = {
   value: string | null;       // 기업이 적은 값 (없으면 null)
   answer: Answer;             // 값이 없을 때의 답변
   evidence?: string;          // AI가 읽은 근거 (자료 속 문장)
+  restored?: true;            // 가린 값([주소1] 등)을 서버에서 원래 값으로 되돌림
 };
 
 const ANSWER: Record<string, Answer> = {
@@ -43,7 +44,8 @@ export async function read_request_file(buf: ArrayBuffer, d: ProductDetail): Pro
     const item = items.get(key);
     if (!item) { foreign++; return; }
     const ans = text(row.getCell(8).value);
-    const val = text(row.getCell(9).value);
+    const raw_val = text(row.getCell(9).value);
+    const val = item.def.key === 'currency' ? raw_val.toUpperCase() : raw_val;   // 'usd' → 'USD' (저장할 때와 같게 미리보기에도)
     if (!ans && !val) return;
     if (val) changes.push({ key, scope: item.scope, label: item.def.label, current: item.value, value: val, answer: '' });
     else if (ANSWER[ans] && (ANSWER[ans] === item.row?.wait_reason || (ANSWER[ans] === 'not_applicable' && item.status === 'not_applicable'))) return;   // 그대로인 답변

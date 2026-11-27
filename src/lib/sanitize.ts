@@ -54,6 +54,67 @@ export function sanitize(text: string): SanitizeResult {
   return { text: out, removed };
 }
 
+// ---------------------------------------------------------------------------
+// [공용] 가린 뒤 복원 (11/27, 강사님 제안 반영)
+// "내부만" 정보(주소 · 연락처 · 단가 · 사업자번호)는 지우는 대신 [주소1] · [금액2] 같은 표시로 가려서 AI로 보내고,
+// AI 답에 그 표시가 돌아오면 서버에서 원래 값으로 되돌린다. 원래 값(masks)은 AI로 보내지 않는다.
+// "받지 않는" 정보(배합비)는 되돌리지 않고 그냥 지운다.
+
+const RESTORABLE = new Set(['이메일', '전화', '주소', '사업자번호', '금액']);
+const MASK_TOKEN = /\[(이메일|전화|주소|사업자번호|금액)(\d{1,3})\]/g;
+const MAX_MASK_VALUE = 300;
+
+export type MaskResult = { text: string; masks: Record<string, string>; removed: Record<string, number> };
+
+/** 글 속 민감정보를 가린다. 같은 값은 같은 표시로 가린다 (AI가 "같은 주소"임을 알 수 있게) */
+export function maskForAI(text: string): MaskResult {
+  const removed: Record<string, number> = {};
+  const masks: Record<string, string> = {};
+  const by_value = new Map<string, string>();
+  const count: Record<string, number> = {};
+  let out = text;
+  for (const rule of RULES) {
+    out = out.replace(rule.pattern, (m) => {
+      removed[rule.name] = (removed[rule.name] ?? 0) + 1;
+      if (!RESTORABLE.has(rule.name)) return rule.replace;
+      const v = m.trim();
+      const key = `${rule.name}|${v}`;
+      let token = by_value.get(key);
+      if (!token) {
+        count[rule.name] = (count[rule.name] ?? 0) + 1;
+        token = `[${rule.name}${count[rule.name]}]`;
+        by_value.set(key, token);
+        masks[token] = v;
+      }
+      return token;
+    });
+  }
+  return { text: out, masks, removed };
+}
+
+/** 화면에서 되돌아온 masks를 믿기 전에 모양을 확인한다 (표시 이름 · 값 길이) */
+export function checkMasks(v: unknown): Record<string, string> {
+  const out: Record<string, string> = {};
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return out;
+  for (const [k, x] of Object.entries(v as Record<string, unknown>)) {
+    if (typeof x !== 'string' || x.length > MAX_MASK_VALUE) continue;
+    if (!new RegExp(`^${MASK_TOKEN.source}$`).test(k)) continue;
+    out[k] = x;
+  }
+  return out;
+}
+
+/** AI 답 속 [주소1] 같은 표시를 원래 값으로 되돌린다. 모르는 표시는 그대로 둔다 */
+export function restoreMasks(text: string, masks: Record<string, string>): { text: string; restored: string[] } {
+  const restored: string[] = [];
+  const t = text.replace(MASK_TOKEN, (m) => {
+    if (!(m in masks)) return m;
+    restored.push(m);
+    return masks[m];
+  });
+  return { text: t, restored };
+}
+
 /** 표 데이터(엑셀 등)는 열 이름으로 먼저 거른다. 배합비 · 단가 · 주소 열은 통째로 뺀다. */
 const BLOCKED_COLUMNS = /배합|함량\s*\(%\)|비율|단가|가격|금액|price|주소|address|전화|tel|phone|e-?mail/i;
 
@@ -104,6 +165,7 @@ const PUBLIC_NUMBER_CONTEXT = /(?:HSK?|HS\s?코드|세번|품목(?:제조)?보�
 export function findLeftovers(text: string, opt: LeftoverOptions = {}): Leftover[] {
   const out: Leftover[] = [];
   text = text.replace(PUBLIC_NUMBER_CONTEXT, '[공개 번호]');
+  text = text.replace(MASK_TOKEN, '[가림]');   // [금액1] 같은 가린 표시의 숫자는 흔적이 아님
   for (const r of LEFTOVER_RULES) if (!(r.percent && opt.allowPercent)) for (const m of text.matchAll(r.pattern)) out.push({ name: r.name, sample: m[0].slice(0, 40) });
   return out;
 }

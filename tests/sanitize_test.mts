@@ -69,3 +69,18 @@ ok(!r.ok, '너무 깊은 객체 차단');
   ok(findLeftovers('공장: Bundang-gu 어딘가').length > 0, '지우고 남은 영문 주소 낱말은 차단');
   ok(findLeftovers('Ingredients: Rice, Salt, Tomato Powder. Store in a cool, dry place. Country of Origin: Republic of Korea').length === 0, '영문 원재료 · 보관 문구 · 원산지는 차단하지 않음');
 }
+// 가린 뒤 복원 (11/27)
+{
+  const { maskForAI, restoreMasks, checkMasks } = await import('../src/lib/sanitize.ts');
+  const src = '제조원 주소: 경기 화성시 동탄대로 12 3층\n문의 kim@ex.com / 031-123-4567\n단가 USD 2.50, 반품 시 같은 주소 경기 화성시 동탄대로 12 3층\n배합비율\n쌀 80%\n\n원재료: 쌀, 소금';
+  const m = maskForAI(src);
+  ok(!/동탄대로|kim@|4567|2\.50|80%/.test(m.text), '가린 글에 원래 값 없음: ' + JSON.stringify(m.text));
+  ok(m.text.includes('[주소1]') && m.text.includes('[금액1]') && m.text.includes('[이메일1]') && m.text.includes('[전화1]'), '번호 붙은 표시로 가림');
+  ok((m.text.match(/\[주소1\]/g) ?? []).length === 2 && !m.text.includes('[주소2]'), '같은 주소는 같은 표시');
+  ok(m.text.includes('[배합비 제거됨]') && !Object.values(m.masks).some((v) => v.includes('80')), '배합비는 되돌리지 않고 지움');
+  ok(findLeftovers(m.text, { allowPercent: true }).length === 0, '가린 글은 남은 흔적 검사 통과');
+  const back = restoreMasks('[금액1] / [주소1] / [주소9]', m.masks);
+  ok(back.text.startsWith('USD 2.50 / 경기 화성시') && back.text.endsWith('[주소9]') && back.restored.length === 2, '되돌리기: 아는 표시만 되돌림: ' + back.text);
+  const cm = checkMasks({ '[주소1]': 'a', '주소1': 'b', '[배합비1]': 'c', '[금액2]': 3, '[전화1]': 'x'.repeat(400) });
+  ok(Object.keys(cm).join() === '[주소1]', '화면에서 돌아온 masks 모양 검사: ' + JSON.stringify(cm));
+}
