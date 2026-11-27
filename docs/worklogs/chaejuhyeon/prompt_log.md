@@ -52,3 +52,10 @@
 - **반영 파일:** `20261126000100_product_core.sql`(component_ingredients.name_en, products.outer_label_w_mm · outer_label_h_mm, 라벨 문구 item_key production_date · expiry_date), `20261126000900_save_product_rpc.sql`, `types.ts`, `fields.ts`(outer_label_size 선택 칸), `form.ts`(원재료 줄 " / 영문명" 읽기 · 쓰기, 영문명만 바뀌면 상태 유지), `share.ts`(ingredients[].name_en, components[].nutrition 원본, nutrition_items, packs.outer.label_area_mm), `sample.ts`, `product_form.tsx`.
 - **판단:** 봉 수는 이미 `components[].quantity`로 넘어감. 제조사 표기 의무는 제품 탭에서 바꿀 것 없음. 영양 반올림 · 표시 단위는 라벨 탭 몫.
 - **남은 질문:** 없음. 가상 예시 JSON은 프로젝트 파일 `label-sample/`에 둠(저장소에는 넣지 않음).
+
+## 2026-11-27 / 화면 흐름 눌러 보기 · HS 찾기 연결 준비 (11/28 일 당겨서)
+
+- **요청:** 남은 우리 할 일 진행.
+- **반영 파일:** `src/features/products/hs_picker_input.ts`(새 파일: 제품 → HsCodePicker 입력 만들기, 기존 HS는 existing_classification으로), `share.ts` 주석(영양 계산값은 소수 둘째 자리까지만 정리, 국가별 반올림 전).
+- **판단:** HsCodePicker는 GPT 파일이라 아직 화면에 붙이지 않음(11/29). 직접 적은 HS는 검토 이력이 없어 existing_classification의 확정일 · 확정자 · 검토 ID가 비어 있을 수 있음 → GPT 계약(필수 문자열)과 맞지 않아 GPT에게 확인 요청.
+- **UI 의견(11/29 일괄 수정 때):** 등록 · 수정 · 상세 화면이 팀 공통 틀 밖(사이드바 없음), AI 키가 없을 때 "저장 전 확인할 내용 0개"가 같이 보여 헷갈림, 요청 목록 미리보기에 정리 전 값(usd)이 보임(저장은 USD), 할 일 요약 문장에 "0개"가 그대로 나옴, 기존 라벨 문구가 많아지면 언어별로 묶어 보기.
