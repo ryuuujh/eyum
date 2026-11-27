@@ -19,3 +19,17 @@
 - **확인할 동작:** 문서 변경만 있음. 코드 · 설정 변경 없음.
 - **수행 방법 / 결과:** `docs/feature_spec.md` 양식 5장 규칙과 11/26 부속물품 옵션 합의 문서와 대조함. lint · typecheck · build는 코드 변경이 없어 실행하지 않음.
 - **미검증 범위:** 명세 6장의 모든 사례.
+
+## 2026-11-27 / 제품 등록·관리 코드 저장소 이전과 accessory_option 반영
+
+- **확인할 동작:** 팀 저장소(Next.js 16)에서 제품 화면 · 통로가 동작하는지, DB 마이그레이션과 저장 함수가 맞는지, 민감정보 규칙이 유지되는지.
+- **수행 방법 / 결과**
+  - `npm run typecheck` · `npm run lint` · `npm run build`: 모두 통과.
+  - `node --experimental-strip-types tests/sanitize_test.mts` (Node 24는 플래그 없이 실행): 41개 PASS, FAIL 0 (기존 37 + 영문 주소 4).
+  - 빈 PostgreSQL 16에 마이그레이션 0100 · 0200 · 0500 · 0900과 seed를 순서대로 적용 (GPT 3 · 4번 자리는 hs_classifications 임시 테이블로 대신): 통과. 처음엔 seed의 보관 조건 상태 줄 중복으로 실패 → 중복 줄 삭제 후 통과.
+  - accessory_option: 상태 줄 저장, 옵션 행 삭제 시 상태 줄 같이 삭제, 목록에 없는 유형은 거부. 모두 확인.
+  - 앱의 저장 데이터 생성 함수(`to_rows`)로 만든 값을 `save_product`에 넣음: 새 제품 등록(구성품 1 · 원재료 2), 또떡EZ 영문명 수정 후 상태 "확인됨", 구성품 3개 유지. 통과.
+  - `next start`(예시 데이터 모드)로 목록 · 상세 · 제품 정보 · 수정 · 새 등록 · 다시 올리기 · 엑셀 내려받기 · 통로 2개: 모두 200. 규제 통로 요약 20 / 5 / 7 / 8로 이전과 같음. 목록이 팀 공통 틀 안에 보이는 것 캡처로 확인.
+  - 채주현 PC(Node 26.13 · npm 11.20 · Docker Desktop)에서 `npm install` 성공. 저장소 밖 검증용 폴더(`C:\Users\user\eyum_local_db`)에 로컬 Supabase를 띄우고 마이그레이션(임시 hs_classifications → 0100 → 0200 → 0500 → 0900)과 seed 적용: 오류 없음. 팀 공통 DB는 쓰지 않음.
+  - `.env.local`을 로컬 Supabase로 두고 `npm run dev` 후 `/api/dev/check-db`: connected · Supabase · ok. 제품 목록 읽기(1개), 구성품 목록(3개), 또떡EZ 상세(구성품 3 · 원재료 10줄 · 상태 19개), 새 등록 저장 · 다시 읽기, 수정 저장(이름 · 원재료), 라벨 통로(칸 14 · 바로 쓸 값 4), 점검용 제품 지우기 모두 통과. `/products` 200, 규제 통로 요약 20 / 5 / 7 / 8.
+- **미검증 범위:** 브라우저에서 등록 · 수정 버튼을 눌러 저장하는 흐름 전체(11/28 예정), 실제 OpenAI 호출(키 없음), 팀 기준 Node 24에서 실행(채주현 PC는 Node 26).
