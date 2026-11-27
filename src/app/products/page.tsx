@@ -1,7 +1,7 @@
 // 제품 목록 (Claude)
 import Link from 'next/link';
 import { FeatureScreen, type WorkspacePageProps } from '@/components/feature_screen';
-import { AccessoryHsLookup } from './accessory_hs_lookup';
+import { AccessoryList } from '@/features/accessories/components/accessory_list';
 import { ExportToggle } from './export_toggle';
 import { ui } from '@/components/ui';
 import { get_product_detail, get_products } from '@/features/products/data';
@@ -19,7 +19,7 @@ export default async function ProductsPage({ searchParams }: WorkspacePageProps)
     }),
   );
 
-  // 공통 틀(사이드바 · 제목) 안에 제품 목록을 둔다. 부속물품 자리(AccessoryHsLookup)는 GPT 담당이라 그대로 둔다.
+  // 공통 틀(사이드바 · 제목) 안에 제품 목록과 부속물품 목록을 둔다.
   return (
     <FeatureScreen slug="products" searchParams={searchParams}>
     <main className={ui.page}>
@@ -62,7 +62,7 @@ export default async function ProductsPage({ searchParams }: WorkspacePageProps)
         </table>
       </div>
     </main>
-    <AccessoryHsLookup />
+    <AccessoryList />
     </FeatureScreen>
   );
 }

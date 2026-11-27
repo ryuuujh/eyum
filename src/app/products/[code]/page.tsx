@@ -1,7 +1,11 @@
 // 제품 상세 (Claude): 할 일 / 제품 정보
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { get_product_detail } from '@/features/products/data';
+import { db, get_product_detail } from '@/features/products/data';
+import { build_hs_picker_input } from '@/features/products/hs_picker_input';
+import { confirm_food_hs, search_food_hs } from '@/features/products/hs_actions';
+import { HsPickerClient } from '@/features/accessories/components/hs_picker_client';
+import { format_hs_code } from '@/features/products/hs_format';
 import { build_detail_view } from '@/features/products/view';
 import { calc_nutrition } from '@/features/products/nutrition';
 import { DetailTabs } from './detail_tabs';
@@ -36,6 +40,17 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
         </>}
       />
       <DetailTabs code={code} view={view} nutrition={nutrition} components={d.components.map((c) => ({ name: c.component.name, amount: c.amount, unit: c.unit, quantity: c.quantity }))} />
+      <section className="mt-8" id="hs">
+        <h2 className="mb-2 text-base font-semibold">HS 코드 찾기</h2>
+        <p className={ui.note}>{d.exportInfo?.hs6
+          ? <>현재 <b>{format_hs_code(d.exportInfo.hsk10 ?? d.exportInfo.hs6)}</b>{d.exportInfo.hs_confirmed_by ? ` · ${d.exportInfo.hs_confirmed_by} · ${d.exportInfo.hs_checked_at ?? ''}` : ' · 직접 입력한 값 (검토 기록 없음)'}</>
+          : '아직 HS가 없어요. 후보를 찾아 담당자가 확정하면 수출 · 물류의 HS 칸에 들어가요.'}</p>
+        {db() ? (
+          <div className="mt-3">
+            <HsPickerClient {...build_hs_picker_input(d)} search={search_food_hs} confirm={confirm_food_hs.bind(null, p.code, p.id)} />
+          </div>
+        ) : <p className={ui.hint}>예시 데이터 모드에서는 HS 찾기를 쓸 수 없어요 (DB 연결 필요).</p>}
+      </section>
       {d.labelTexts.length > 0 && (
         <section className="mt-8">
           <h2 className="mb-2 text-base font-semibold">기존 라벨 문구 <span className="text-sm font-normal text-slate-500">(원문 그대로)</span></h2>

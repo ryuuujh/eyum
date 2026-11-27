@@ -1,18 +1,11 @@
-// HS 찾기(HsCodePicker, GPT 담당)에 넘길 식품 입력 만들기 (Claude). 11/29 통합 때 수출 · 물류 탭 HS 칸에서 쓴다.
+// HS 찾기(HsCodePicker)에 넘길 식품 입력 만들기 (Claude). 제품 상세의 HS 찾기에서 쓴다.
 // 약속(11/25 · 11/27): item_type 'food', item_id = products.id, 기존 HS는 덮어쓰지 않고 existing_classification으로 넘긴다.
 // attributes 키는 sanitize의 AI_ALLOWED_FIELDS.food 안에서만 쓴다 (함량 % · 제조원 · 단가 · 주소는 넣지 않음).
 import type { ProductDetail } from './data';
 
-/** GPT contracts.ts의 HsPickerInput과 같은 모양 (그 파일이 저장소에 들어오면 그 타입으로 바꾼다) */
-export type FoodHsPickerInput = {
-  item_id: string;
-  item_name: string;
-  item_type: 'food';
-  item_name_en?: string;
-  attributes?: Record<string, unknown>;
-  description?: string;
-  existing_classification?: { hs6: string; hsk10: string | null; hs_checked_at: string | null; hs_confirmed_by: string | null; hs_classification_id: string | null };
-};
+import type { HsPickerInput } from '@/lib/hs/contracts';
+
+export type FoodHsPickerInput = HsPickerInput & { item_type: 'food' };
 
 export function build_hs_picker_input(d: ProductDetail): FoodHsPickerInput {
   const p = d.product;
@@ -31,7 +24,7 @@ export function build_hs_picker_input(d: ProductDetail): FoodHsPickerInput {
       packaging_form: d.components.map((c) => `${c.component.name} ${c.amount}${c.unit} × ${c.quantity}`).join(', '),
       ...(p.storage_condition ? { storage: p.storage_condition } : {}),
     },
-    // 직접 적은 HS(검토 이력 없음)도 기존 값으로 넘긴다. 그래서 확정일 · 확정자 · 검토 ID는 비어 있을 수 있음 (GPT와 확인 필요)
+    // 직접 적은 HS(검토 이력 없음)도 기존 값으로 넘긴다. 그래서 확정일 · 확정자 · 검토 ID는 비어 있을 수 있음
     ...(e?.hs6 ? { existing_classification: {
       hs6: e.hs6, hsk10: e.hsk10, hs_checked_at: e.hs_checked_at, hs_confirmed_by: e.hs_confirmed_by, hs_classification_id: e.hs_classification_id,
     } } : {}),

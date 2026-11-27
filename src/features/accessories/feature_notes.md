@@ -22,9 +22,21 @@
 - 부속물품 통로는 지금 localhost · 비운영 환경에서만 켜진다(로그인 전 안전장치).
 - 사람이 직접 입력한 식품 HS는 `existing_classification`의 확인일 · 확인자 · 검토 ID가 null일 수 있다.
 
+## 화면 (11/27 Claude 추가)
+
+| 화면 | 경로 |
+|---|---|
+| 부속물품 목록 (옵션마다 한 줄, 서류 포함 체크) | `/products` 아래 `#accessories` — `components/accessory_list.tsx` |
+| 새 부속물품 | `/products/accessories/new` |
+| 부속물품 상세 (물품 정보 · 옵션 · 가액 · 서류용 칸 · HS 찾기 · 재검토 · 보관/되살리기 · 옵션 추가) | `/products/accessories/[id]?option=<옵션 ID>` |
+| 제품 HS 찾기 | 제품 상세 `/products/[code]#hs` |
+
+- 저장은 모두 DB 함수 `accessory_action(p jsonb)` (GPT 로컬 시안 `local_accessory_action`을 옮김), 식품 HS는 `food_hs_action(p jsonb)` — `supabase/migrations/20261127000100_accessory_action.sql`.
+- 팀 DB에서는 두 함수 권한을 열지 않는다. 로컬 확인은 `supabase/local_only/accessory_screen_permissions.sql` (document_permissions 다음에).
+- 서버 동작: `actions.ts`(부속물품), `src/features/products/hs_actions.ts`(식품). 읽기: `data.ts`.
+
 ## 남은 일
 
-- 화면 연결: 팀 부속물품 목록에 `ExportSelectionCheckbox`, 옵션 편집에 가액 · 통화 칸, 제품 수출 · 물류 탭에 HsCodePicker(`build_hs_picker_input`).
 - 통로 맞추기: 목록 가볍게, 최상위 `summary` · `packs`, 칸 이름 차이(제품 `unit_gross_g` · `finished_country` · `ctn_size` ↔ 부속물품 `unit_weight_g` · `origin` · `ctn_l/w/h_cm`).
 - 공식 HS 코드표 넣기(0300 표는 비어 있음. 원본 ZIP의 `import_official.py`).
 - 팀 공통 DB 적용 · 실제 AI 호출 · 운영 권한(로그인)은 승인 뒤.

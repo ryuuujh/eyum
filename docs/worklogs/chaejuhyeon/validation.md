@@ -58,3 +58,10 @@
 - HS 찾기 입력(`build_hs_picker_input`) → `prepareForAI(food)` 통과, 빠진 칸 없음.
 - 브라우저 오류 0. typecheck · lint 통과.
 - **미검증:** 채주현 PC(실제 로컬 Supabase)에서 같은 클릭 흐름, 실제 OpenAI 호출.
+
+## 2026-11-27 / 부속물품 · HS 찾기 합치기와 화면 연결
+
+- **클라우드 작업 사본:** GPT 파일 포함 typecheck · lint · build 통과. 빈 PostgreSQL 16에 마이그레이션 12개 + seed + 로컬 전용 권한 2개 + 가짜 HS 버전(코드 4개) 적용 오류 0. anon 역할로 accessory_action 등록 · 서류용 칸 · 검색 · 확정 · 목록, food_hs_action 검색 · 확정 → product_export와 field_status(hs6 · hsk10 확인됨) 같이 바뀜. "가상 카탈로그" 검색 → 낱말 "카탈로그"로 4911.10-9000 후보.
+- **채주현 PC 로컬 Supabase (eyum_local_db, 팀 DB 아님, AI 호출 없음):** 임시 대체 파일(local_stub)을 `_old_stub\`로 옮기고 실제 마이그레이션 12개 + seed로 db reset 오류 0. check-db 8단계 ok. 부속물품 통로: 서류 포함 PATCH 200, `?selected=1` 1건, external=1에서 가액 · 통화 빠짐, 물품 보관 후 []. 브라우저(Playwright, 저장소 밖 설치): 부속물품 목록 · 새 등록 · 서류용 칸 · 가액(usd → USD) · 서류 포함 체크 · HS 후보 → 담당자 확정 → 이력 1줄 · 옵션 추가 · 보관 · 되살리기 · 물품 보관 통과, 제품 HS 찾기(검색어 "떡") → 1902.30-1010 확정 → 서류 통로 usable. 스크린샷 `Downloads\accessory_check\`.
+- **PC 점검에서 찾고 고친 것:** ① 두 단어 물품명은 후보 0개 → 낱말 검색 · 검색어 칸 추가(클라우드에서 확인, PC 재확인 전) ② 옵션 보관 후 상세 화면 hydration 오류(`<p>` 안 `<form>`) → `<div>`로 고침(PC 재확인 전).
+- **미검증:** 공식 HS 코드표(17,072개) 적재 후 실제 검색, 팀 DB, 실제 OpenAI 호출.

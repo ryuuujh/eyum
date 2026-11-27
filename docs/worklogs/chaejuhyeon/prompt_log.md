@@ -59,3 +59,12 @@
 - **반영 파일:** `src/features/products/hs_picker_input.ts`(새 파일: 제품 → HsCodePicker 입력 만들기, 기존 HS는 existing_classification으로), `share.ts` 주석(영양 계산값은 소수 둘째 자리까지만 정리, 국가별 반올림 전).
 - **판단:** HsCodePicker는 GPT 파일이라 아직 화면에 붙이지 않음(11/29). 직접 적은 HS는 검토 이력이 없어 existing_classification의 확정일 · 확정자 · 검토 ID가 비어 있을 수 있음 → GPT 계약(필수 문자열)과 맞지 않아 GPT에게 확인 요청.
 - **UI 의견(11/29 일괄 수정 때):** 등록 · 수정 · 상세 화면이 팀 공통 틀 밖(사이드바 없음), AI 키가 없을 때 "저장 전 확인할 내용 0개"가 같이 보여 헷갈림, 요청 목록 미리보기에 정리 전 값(usd)이 보임(저장은 USD), 할 일 요약 문장에 "0개"가 그대로 나옴, 기존 라벨 문구가 많아지면 언어별로 묶어 보기.
+
+## 2026-11-27 / 부속물품 · HS 찾기를 한 브랜치로 합치고 화면 연결
+
+- **요청:** GPT가 하던 부속물품 · HS 찾기도 모두 Claude가 가져와 `feature/products` 하나에서 작업. 이어서 ① PC 로컬 DB 다시 점검 ② 부속물품 화면 연결 ③ 공식 HS 코드표 ④ 통로 칸 이름 맞추기.
+- **반영 파일**
+  - GPT v4 통합본 그대로: `src/app/api/accessories/*`, `src/components/hs/*`, `src/features/accessories/`(document_fields · document_routes · export_selection_checkbox · option_hs_panel), `src/lib/hs/*`, 마이그레이션 0300 · 0400 · 0600 · 0700 · 0800 · 1000 · 1100, `supabase/local_only/accessory_document_permissions.sql`, `tests/verify_team_options.sql`. 설명 `src/features/accessories/feature_notes.md`.
+  - 새로 만든 것: 마이그레이션 `20261127000100_accessory_action.sql`(DB 함수 `accessory_action` — GPT 로컬 시안 어댑터를 옮기고 영문명 · 설명 · 서류용 칸 · 띄어쓰기 단위 검색을 더함, `food_hs_action` — 식품 HS 검색 · 확정), `supabase/local_only/accessory_screen_permissions.sql`, `src/features/accessories/data.ts` · `actions.ts` · `components/accessory_list.tsx` · `components/hs_picker_client.tsx`, 화면 `/products/accessories/new` · `/products/accessories/[id]`, 제품 목록 아래 부속물품 목록(자리 표시 `accessory_hs_lookup` 대신), 제품 상세 "HS 코드 찾기"(`src/features/products/hs_actions.ts`), `hs_picker_input.ts`는 공용 계약 타입 사용.
+- **판단:** 부속물품 화면과 통로는 로그인 전까지 로컬 Supabase + 비운영 모드에서만 켜짐(GPT 안전장치 유지). 팀 DB에서는 새 DB 함수 권한을 열지 않음. 부속물품 검색에 검색어 칸을 넣고, 이름 전체가 안 맞으면 띄어쓰기 단위 낱말로도 찾음.
+- **남은 질문:** 공식 HS 코드표 원본 파일 위치(채주현 확인 중), 예시 데이터는 유정현이 가상 제품으로 교체 예정(A안, 11/27 결정).
