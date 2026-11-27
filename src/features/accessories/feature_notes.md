@@ -35,8 +35,15 @@
 - 팀 DB에서는 두 함수 권한을 열지 않는다. 로컬 확인은 `supabase/local_only/accessory_screen_permissions.sql` (document_permissions 다음에).
 - 서버 동작: `actions.ts`(부속물품), `src/features/products/hs_actions.ts`(식품). 읽기: `data.ts`.
 
+## 서류 탭이 제품 · 부속물품을 같은 코드로 읽는 법 (11/27)
+
+- 두 상세 응답 모두 `item_type`(`food` · `accessory`), `item_id`, `name_ko`, `for`, `external`, `summary`, `fields[]`, `packs`를 준다. 판정은 `fields[].usable`만 쓴다.
+- 숫자 계산은 `packs`(같은 모양): 개당 중량 `packs.unit.gross_g`, CTN 입수 · 순중량 · 총중량 · 크기 `packs.outer.units_per_ctn · net_kg · gross_kg · size_cm{l,w,h}`. 부속물품에 없는 값은 null.
+- `fields[].field` 이름이 다른 것 (상태 · usable을 볼 때): 개당 중량 제품 `unit_gross_g` ↔ 부속물품 `unit_weight_g`, 원산지 제품 `finished_country`(완제품 제조국) ↔ `origin`, CTN 크기 제품 `ctn_size`(한 칸) ↔ `ctn_l_cm` · `ctn_w_cm` · `ctn_h_cm`, 영문명 제품 `name_en` ↔ `item_name_en`. HS(`hs6` · `hsk10`) · CTN(`units_per_ctn` · `ctn_net_kg` · `ctn_gross_kg`) · 가액(`unit_price` · `currency`)은 같은 이름.
+- 목록: 제품 `GET /api/products?selected=1`은 가벼운 목록(code · item_id), 부속물품 `GET /api/accessories?selected=1`은 상세 배열.
+
 ## 남은 일
 
-- 통로 맞추기: 목록 가볍게, 최상위 `summary` · `packs`, 칸 이름 차이(제품 `unit_gross_g` · `finished_country` · `ctn_size` ↔ 부속물품 `unit_weight_g` · `origin` · `ctn_l/w/h_cm`).
-- 공식 HS 코드표 넣기(0300 표는 비어 있음. 원본 ZIP의 `import_official.py`).
+- 식품 HS 검색이 약함("떡" → 떡갈잎 · 떡밥): 별칭 사전(`hs_search_aliases`) 채우기 또는 AI 검색어(OpenAI 승인 필요) 중 결정.
+- 공식 HS 코드표: `scripts/build_hs_official_sql.py`로 관세청 엑셀 2개 → SQL을 만들어 psql로 넣는다(로컬은 11/27 적재 완료, 팀 DB는 승인 뒤). 만든 SQL(약 20MB)은 Git에 넣지 않는다.
 - 팀 공통 DB 적용 · 실제 AI 호출 · 운영 권한(로그인)은 승인 뒤.

@@ -52,6 +52,21 @@ export function build_document_option(option: DocumentOption, statuses: StatusRo
       uses: ["서류"],
     };
   });
-  return { id: option.option_id, option_id: option.option_id, accessory_id: option.accessory_id,
-    export_selected: option.export_selected, fields };
+  const n = (k: FieldKey) => (option[k] == null || option[k] === "" ? null : Number(option[k]));
+  const size = { l: n("ctn_l_cm"), w: n("ctn_w_cm"), h: n("ctn_h_cm") };
+  // 제품 통로(SharedPacks)와 같은 모양. 부속물품은 개별포장 크기 · 라벨 면적 · 팔레트 정보가 없어 null
+  const packs = {
+    unit: { net_content: null, net_unit: null, gross_g: n("unit_weight_g"), size_mm: null, label_area_mm: null },
+    outer: { units_per_ctn: n("units_per_ctn"), net_kg: n("ctn_net_kg"), gross_kg: n("ctn_gross_kg"),
+      size_cm: Object.values(size).every(v => v == null) ? null : size, label_area_mm: null },
+    pallet: { l_cm: null, w_cm: null, layers: null, ctn_count: null },
+  };
+  return { item_type: "accessory" as const, item_id: option.option_id,
+    id: option.option_id, option_id: option.option_id, accessory_id: option.accessory_id,
+    name_ko: option.item_name, option_name: option.option_name, for: "서류" as const, external,
+    export_selected: option.export_selected,
+    summary: { total: fields.length, usable: fields.filter(f => f.usable).length,
+      needs_check: fields.filter(f => f.status === "needs_check").length,
+      missing: fields.filter(f => f.status === "missing" || f.status === "on_hold").length },
+    fields, packs };
 }

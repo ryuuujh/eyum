@@ -68,3 +68,9 @@
   - 새로 만든 것: 마이그레이션 `20261127000100_accessory_action.sql`(DB 함수 `accessory_action` — GPT 로컬 시안 어댑터를 옮기고 영문명 · 설명 · 서류용 칸 · 띄어쓰기 단위 검색을 더함, `food_hs_action` — 식품 HS 검색 · 확정), `supabase/local_only/accessory_screen_permissions.sql`, `src/features/accessories/data.ts` · `actions.ts` · `components/accessory_list.tsx` · `components/hs_picker_client.tsx`, 화면 `/products/accessories/new` · `/products/accessories/[id]`, 제품 목록 아래 부속물품 목록(자리 표시 `accessory_hs_lookup` 대신), 제품 상세 "HS 코드 찾기"(`src/features/products/hs_actions.ts`), `hs_picker_input.ts`는 공용 계약 타입 사용.
 - **판단:** 부속물품 화면과 통로는 로그인 전까지 로컬 Supabase + 비운영 모드에서만 켜짐(GPT 안전장치 유지). 팀 DB에서는 새 DB 함수 권한을 열지 않음. 부속물품 검색에 검색어 칸을 넣고, 이름 전체가 안 맞으면 띄어쓰기 단위 낱말로도 찾음.
 - **남은 질문:** 공식 HS 코드표 원본 파일 위치(채주현 확인 중), 예시 데이터는 유정현이 가상 제품으로 교체 예정(A안, 11/27 결정).
+
+## 2026-11-27 / 공식 HS 코드표 넣기 · 서류 통로 맞추기
+
+- **요청:** 남은 3번(공식 HS 코드표) · 4번(제품 · 부속물품 통로 칸 맞추기).
+- **반영 파일:** `scripts/build_hs_official_sql.py`(관세청 엑셀 2개 → HS 코드표 SQL, 같은 파일이면 건너뜀. 만든 SQL은 약 20MB라 Git 제외), `src/features/products/share.ts`(상세 · 목록에 item_type 'food' · item_id), `src/features/accessories/document_fields.ts`(item_type 'accessory' · item_id · name_ko · option_name · for · external · summary · packs — 제품과 같은 모양), `src/features/accessories/feature_notes.md`(칸 이름 대응표).
+- **판단:** 칸 이름 자체는 바꾸지 않고(이미 쓰는 곳 보호) 공통 머리 · packs로 맞춤. 식품 HS 검색은 글자 일치만이라 "떡" → 떡갈잎 · 떡밥만 나옴 → 별칭 사전 또는 AI 검색어(GPT 설계, OpenAI 승인 필요) 결정 대기.

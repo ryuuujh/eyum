@@ -28,6 +28,8 @@ export type SharedField = {
 export type SharedIngredient = { name: string; name_en: string | null; origin: string | null; is_organic: boolean; is_additive: boolean; additive_function: string | null; ins_no: string | null; allergens: string[]; labeled_pct: number | null; pct_basis: string | null; children: SharedIngredient[] };
 
 export type SharedProduct = {
+  item_type: 'food';           // 서류 탭이 제품 · 부속물품을 같은 코드로 읽을 때 구분용 (부속물품은 'accessory')
+  item_id: string;             // products.id
   code: string;
   name_ko: string;
   updated_at: string | null;
@@ -89,6 +91,7 @@ export function to_shared(d: ProductDetail, opt: { for?: UseTab | null; external
     }
   }
   return {
+    item_type: 'food', item_id: d.product.id,
     code: d.product.code, name_ko: d.product.name_ko, updated_at: (d.product as unknown as { updated_at?: string }).updated_at ?? null,
     for: tab, external,
     summary: {
@@ -155,7 +158,7 @@ export async function get_shared_product(code: string, opt: { for?: UseTab | nul
 
 /** 다른 탭용: 제품 고르기 목록. selected: true면 "수출할 제품"으로 체크한 것만 (없으면 빈 목록 → "선택된 제품이 없습니다") */
 export async function list_shared_products(opt: { selected?: boolean } = {}) {
-  return (await get_products(opt)).map((p) => ({ code: p.code, name_ko: p.name_ko, status: p.status, export_selected: p.export_selected }));
+  return (await get_products(opt)).map((p) => ({ item_type: 'food' as const, item_id: p.id, code: p.code, name_ko: p.name_ko, status: p.status, export_selected: p.export_selected }));
 }
 
 export const USE_TABS: UseTab[] = ['규제', '라벨', '서류'];
