@@ -25,7 +25,7 @@ export function apply_change(f: ProductForm, c: Change, ai_note?: string) {
     return;
   }
   if (field in COMPOSITE_FIELDS) {
-    // "143 × 143 × 98" · "143x143x98mm" → 숫자 차례대로
+    // "150 × 90 × 60" · "150x90x60mm" → 숫자 차례대로
     const nums = v.replace(/,/g, '').match(/\d+(\.\d+)?/g) ?? [];
     const target = (field === 'ctn_size' ? f.exp : f.p) as Record<string, string>;
     COMPOSITE_FIELDS[field].cols.forEach((k, i) => { if (nums[i] != null) target[k] = nums[i]; });
@@ -47,7 +47,7 @@ export function apply_change(f: ProductForm, c: Change, ai_note?: string) {
   } else if (field in f.p) (f.p as Record<string, string>)[field] = v;
 }
 
-/** "쌀(미국산), 소금, 구연산" → 줄 목록 (괄호 안 쉼표는 나누지 않음) */
+/** "쌀가루(태국산), 기장가루(프랑스산)" → 줄 목록 (괄호 안 쉼표는 나누지 않음) */
 export function split_list(v: string): string[] {
   if (v.includes('\n')) return v.split('\n').map((x) => x.trimEnd()).filter((x) => x.trim());
   const out: string[] = []; let depth = 0; let cur = '';

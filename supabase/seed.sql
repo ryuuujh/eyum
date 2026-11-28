@@ -1,78 +1,57 @@
--- 또떡EZ 예시 데이터 (8/8, Claude). 근거: 또떡EZ_등록예시.md
--- 고정 id를 써서 다른 탭이 같은 제품을 가리킬 수 있게 한다.
+-- 로컬 DB 초기화용 가상 제품. DB 미연결 화면의 src/features/products/sample.ts와 같은 값이다.
+-- 공통 DB에는 검토한 마이그레이션만 적용한다.
 
-insert into products (id, code, name_ko, net_content_value, net_content_unit, net_content_note,
-  serving_desc, servings_per_pack, storage_condition, finished_country, halal, export_selected, status)
-values ('11111111-0000-4000-8000-000000000001', 'ttok-ez', '또떡EZ', 226, 'g', '조리수 제외',
-  '1인분', 2, '상온', '대한민국', '미확인', true, 'draft');
+insert into products (id, code, name_ko, name_en, net_content_value, net_content_unit, net_content_note,
+  serving_desc, servings_per_pack, storage_condition, finished_country, export_selected, created_at, updated_at)
+values ('d1000000-0000-4000-8000-000000000001', 'demo-tteokbokki', '테스트 떡볶이', 'Test Tteokbokki', 166, 'g', '떡·고명·소스 합계의 가상 포장 표시값',
+  '떡볶이 1인분', 1, '냉동', '태국', true, '2026-11-28T00:00:00Z', '2026-11-28T00:00:00Z');
 
--- 기존 라벨 문구: 영어 라벨(10.14) 원문 일부 (주소가 있는 제조원 · 수출자 · 수입자 항목은 예시에 넣지 않음)
-insert into product_label_texts (product_id, language, pack_level, item_key, text, source, sort_order) values
-  ('11111111-0000-4000-8000-000000000001', '영어', 'unit', 'product_name', 'TOTTEOK EZ', '영어 라벨 (10.14)', 1),
-  ('11111111-0000-4000-8000-000000000001', '영어', 'unit', 'net_weight', '226g (Rice Cakes 200 g; Totteok Powder A 20 g; Brewed Soy Sauce 6 g )', '영어 라벨 (10.14)', 2),
-  ('11111111-0000-4000-8000-000000000001', '영어', 'unit', 'ingredients', 'Totteok Powder A [Tomato Powder (Spain), Organic Unrefined Cane Sugar (Argentina), Salt (Korea), Onion Powder (Korea), Garlic Powder (Korea), Kelp Powder (Korea)], Rice Cakes [Rice (USA), Refined Salt, Citric Acid, Ethyl Alcohol], Brewed Soy Sauce (Korea). Contains Soybean, Wheat, and Tomato.', '영어 라벨 (10.14)', 3),
-  ('11111111-0000-4000-8000-000000000001', '영어', 'unit', 'storage', 'Store in a cool, dry place. Avoid direct sunlight', '영어 라벨 (10.14)', 4),
-  ('11111111-0000-4000-8000-000000000001', '영어', 'unit', 'origin', 'Republic of Korea', '영어 라벨 (10.14)', 5);
-
-insert into components (id, name, manufacturer_name, manufacturer_public, report_no, food_type_kr,
-  animal_ingredient, nutrition_basis, unit_weight_g, nutrition_source) values
-('22222222-0000-4000-8000-000000000001', '떡볶이떡-S', '농업회사법인 주식회사 푸르메에프에스', true,
-  '20140487270112', '떡류', '없음', '100g', null, '시험성적서 · 휴먼바이오 · 2026.03.20'),
-('22222222-0000-4000-8000-000000000002', '파우더A', null, null,
-  null, null, '미확인', '100g', null, '시험성적서 · 바이오푸드랩 · 2026.07.27'),
-('22222222-0000-4000-8000-000000000003', '양조간장 501', '샘표', true,
-  null, null, '미확인', '100mL', null, '제품 라벨 표시값 (100mL당)');
+insert into components (id, name, manufacturer_name, manufacturer_public, food_type_kr,
+  animal_ingredient, nutrition_basis, nutrition_source) values
+  ('d2000000-0000-4000-8000-000000000001', '조랭이떡', '가상 떡 실습실', true, '떡류', '없음', '100g', '가상 조랭이떡 영양표'),
+  ('d2000000-0000-4000-8000-000000000002', '대파 참깨 고명', null, null, null, '미확인', '100g', '가상 고명 영양표'),
+  ('d2000000-0000-4000-8000-000000000003', '사과 고추 소스', null, null, null, '없음', '100mL', '가상 소스 영양표');
 
 insert into product_components (product_id, component_id, amount, unit, quantity, sort_order) values
-('11111111-0000-4000-8000-000000000001', '22222222-0000-4000-8000-000000000001', 100, 'g', 2, 1),
-('11111111-0000-4000-8000-000000000001', '22222222-0000-4000-8000-000000000002', 20, 'g', 1, 2),
-('11111111-0000-4000-8000-000000000001', '22222222-0000-4000-8000-000000000003', 6, 'mL', 1, 3);
+  ('d1000000-0000-4000-8000-000000000001', 'd2000000-0000-4000-8000-000000000001', 110, 'g', 1, 1),
+  ('d1000000-0000-4000-8000-000000000001', 'd2000000-0000-4000-8000-000000000002', 8, 'g', 1, 2),
+  ('d1000000-0000-4000-8000-000000000001', 'd2000000-0000-4000-8000-000000000003', 45, 'mL', 1, 3);
 
-insert into component_ingredients (component_id, seq, name, origin, is_additive, ins_no) values
-('22222222-0000-4000-8000-000000000001', 1, '쌀', '미국산', false, null),
-('22222222-0000-4000-8000-000000000001', 2, '소금', null, false, null),
-('22222222-0000-4000-8000-000000000001', 3, '구연산', null, true, '330'),
-('22222222-0000-4000-8000-000000000001', 4, '주정', null, false, null),
--- 파우더A: 혜윰 회신 (2026-11-26) 원재료 순서만, 함량 없음
-('22222222-0000-4000-8000-000000000002', 1, '토마토분말', null, false, null),
-('22222222-0000-4000-8000-000000000002', 2, '유기농 사탕수수당', null, false, null),
-('22222222-0000-4000-8000-000000000002', 3, '양파', null, false, null),
-('22222222-0000-4000-8000-000000000002', 4, '마늘', null, false, null),
-('22222222-0000-4000-8000-000000000002', 5, '다시마', null, false, null),
-('22222222-0000-4000-8000-000000000003', 1, '양조간장', null, false, null);
-update component_ingredients set is_organic = true where component_id = '22222222-0000-4000-8000-000000000002' and name = '유기농 사탕수수당';
-update component_ingredients set origin = '스페인산', allergens = '{토마토}' where component_id = '22222222-0000-4000-8000-000000000002' and name = '토마토분말';
-update component_ingredients set origin = '아르헨티나산' where component_id = '22222222-0000-4000-8000-000000000002' and name = '유기농 사탕수수당';
-update component_ingredients set origin = '국산' where component_id = '22222222-0000-4000-8000-000000000002' and name in ('양파', '마늘', '다시마');
-update component_ingredients set origin = '국산', allergens = '{대두,밀}' where component_id = '22222222-0000-4000-8000-000000000003';
-update components set animal_ingredient = '없음' where id = '22222222-0000-4000-8000-000000000002';
+insert into component_ingredients (id, component_id, seq, name, name_en, origin, allergens) values
+  ('d3000000-0000-4000-8001-000000000001', 'd2000000-0000-4000-8000-000000000001', 1, '쌀가루', 'Rice flour', '태국산', '{}'),
+  ('d3000000-0000-4000-8001-000000000002', 'd2000000-0000-4000-8000-000000000001', 2, '기장가루', 'Millet flour', '프랑스산', '{}'),
+  ('d3000000-0000-4000-8002-000000000001', 'd2000000-0000-4000-8000-000000000002', 1, '건대파', 'Dried green onion', '대만산', '{}'),
+  ('d3000000-0000-4000-8002-000000000002', 'd2000000-0000-4000-8000-000000000002', 2, '볶은 참깨', 'Roasted sesame seeds', '인도산', '{참깨}'),
+  ('d3000000-0000-4000-8003-000000000001', 'd2000000-0000-4000-8000-000000000003', 1, '사과 퓌레', 'Apple puree', '폴란드산', '{}'),
+  ('d3000000-0000-4000-8003-000000000002', 'd2000000-0000-4000-8000-000000000003', 2, '물', 'Water', '태국산', '{}'),
+  ('d3000000-0000-4000-8003-000000000003', 'd2000000-0000-4000-8000-000000000003', 3, '고춧가루', 'Chili powder', '튀르키예산', '{}');
 
 insert into component_nutrition (component_id, kcal, sodium_mg, carb_g, sugar_g, fat_g, sat_fat_g, protein_g) values
-('22222222-0000-4000-8000-000000000001', 218.3, 173.21, 48.80, 0.00, 0.76, 0.21, 4.22),
-('22222222-0000-4000-8000-000000000002', 338.2, 1736.90, 71.76, 61.82, 0.40, 0.11, 11.88),
-('22222222-0000-4000-8000-000000000003', 100.0, 6300.00, 9.00, 2.00, 0.10, 0.00, 10.00);
+  ('d2000000-0000-4000-8000-000000000001', 203, 18, 44.5, 0.8, 0.7, 0.1, 4.6),
+  ('d2000000-0000-4000-8000-000000000002', 403, 66, 38.5, 6.2, 19.2, 2.8, 15.4),
+  ('d2000000-0000-4000-8000-000000000003', 57, 31, 12.6, 7.8, 0.3, 0.05, 0.9);
 
--- 확인 상태 (값이 있는데 확인이 필요한 칸, 기다리는 칸)
-insert into field_status (entity_type, entity_id, field_key, status, wait_reason, wait_who, requested_at, note) values
-('product',   '11111111-0000-4000-8000-000000000001', 'net_content_value', 'needs_check', null, null, null, '간장 6mL를 6g으로 본 값'),
-('product',   '11111111-0000-4000-8000-000000000001', 'storage_condition', 'confirmed', null, null, null, '영어 라벨(10.14) Store in a cool, dry place'),
-('product',   '11111111-0000-4000-8000-000000000001', 'finished_country',  'confirmed', null, null, null, '영어 라벨(10.14) Country of Origin: Republic of Korea'),
-('component', '22222222-0000-4000-8000-000000000002', 'ingredients',       'needs_check', null, null, null, '순서는 혜윰 회신(11/26), 원산지 · 알레르기는 영어 라벨(10.14). 영어 라벨엔 3번째에 소금이 있어 혜윰 확인 중'),
-('component', '22222222-0000-4000-8000-000000000003', 'ingredients',       'needs_check', null, null, null, '영어 라벨(10.14) 기준 한 줄 원재료(하위 원료 구분 안 함, 혜윰). 11/30 미팅에서 확인'),
-('product',   '11111111-0000-4000-8000-000000000001', 'name_en',           'missing', 'undecided', '혜윰', '2026-11-25', null),
-('component', '22222222-0000-4000-8000-000000000001', 'food_type_kr',      'needs_check', null, null, null, '라벨의 "떡류, 복합조미식품"에서 추정'),
-('component', '22222222-0000-4000-8000-000000000001', 'animal_ingredient', 'needs_check', null, null, null, '원재료 기준, 하위 원료 확인 전'),
-('component', '22222222-0000-4000-8000-000000000002', 'animal_ingredient', 'needs_check', null, null, null, '원재료 기준 없음으로 보임 (다시마는 해조류), 혜윰 확인 전'),
-('component', '22222222-0000-4000-8000-000000000003', 'manufacturer_name', 'needs_check', null, null, null, '정식 제조원명 필요'),
-('component', '22222222-0000-4000-8000-000000000003', 'unit_weight_g',     'missing', null, null, null, '6mL = 몇 g인지 없음 → 100g당 영양 보류'),
-('component', '22222222-0000-4000-8000-000000000003', 'nutrition_source',  'needs_check', null, null, null, '시험성적서 아님');
+insert into product_label_texts (id, product_id, language, pack_level, item_key, text, source, sort_order) values
+  ('d4000000-0000-4000-8000-000000000001', 'd1000000-0000-4000-8000-000000000001', '영어', 'unit', 'product_name', 'Test Tteokbokki', '떡볶이 가상 라벨 초안', 1),
+  ('d4000000-0000-4000-8000-000000000002', 'd1000000-0000-4000-8000-000000000001', '영어', 'unit', 'net_weight', 'Net weight: 166 g (one serving).', '떡볶이 가상 라벨 초안', 2),
+  ('d4000000-0000-4000-8000-000000000003', 'd1000000-0000-4000-8000-000000000001', '영어', 'unit', 'ingredients', 'Rice cakes (rice flour, millet flour), apple chili sauce (apple puree, water, chili powder), green onion and sesame garnish (dried green onion, roasted sesame seeds). Contains sesame.', '떡볶이 가상 라벨 초안', 3),
+  ('d4000000-0000-4000-8000-000000000004', 'd1000000-0000-4000-8000-000000000001', '영어', 'unit', 'storage', 'Keep frozen until ready to cook.', '떡볶이 가상 라벨 초안', 4),
+  ('d4000000-0000-4000-8000-000000000005', 'd1000000-0000-4000-8000-000000000001', '영어', 'unit', 'origin', 'Made in Thailand.', '떡볶이 가상 라벨 초안', 5);
 
--- 자료에 그대로 있는 값은 확인됨으로 둔다 (줄이 없으면 값이 있어도 "확인 필요"로 보기 때문)
-insert into field_status (entity_type, entity_id, field_key, status) values
-('product',   '11111111-0000-4000-8000-000000000001', 'name_ko', 'confirmed'),
-('product',   '11111111-0000-4000-8000-000000000001', 'serving_desc', 'confirmed'),
-('product',   '11111111-0000-4000-8000-000000000001', 'servings_per_pack', 'confirmed'),
-('component', '22222222-0000-4000-8000-000000000001', 'manufacturer_name', 'confirmed'),
-('component', '22222222-0000-4000-8000-000000000001', 'report_no', 'confirmed'),
-('component', '22222222-0000-4000-8000-000000000001', 'nutrition_source', 'confirmed'),
-('component', '22222222-0000-4000-8000-000000000002', 'nutrition_source', 'confirmed');
+insert into field_status (id, entity_type, entity_id, field_key, status, wait_reason, wait_who, requested_at, note, updated_at) values
+  ('d5000000-0000-4000-8000-000000000001', 'product', 'd1000000-0000-4000-8000-000000000001', 'finished_country', 'confirmed', null, null, null, null, '2026-11-28T00:00:00Z'),
+  ('d5000000-0000-4000-8000-000000000002', 'product', 'd1000000-0000-4000-8000-000000000001', 'storage_condition', 'confirmed', null, null, null, null, '2026-11-28T00:00:00Z'),
+  ('d5000000-0000-4000-8000-000000000003', 'product', 'd1000000-0000-4000-8000-000000000001', 'net_content_value', 'needs_check', null, null, null, '소스 실중량 확인 후 가상 포장의 166g과 대조', '2026-11-28T00:00:00Z'),
+  ('d5000000-0000-4000-8000-000000000004', 'product', 'd1000000-0000-4000-8000-000000000001', 'manufacturer_name', 'missing', 'asking_supplier', '실습용 포장 담당', '2026-11-28', '완제품 제조원 표기 대기', '2026-11-28T00:00:00Z'),
+  ('d5000000-0000-4000-8000-000000000005', 'component', 'd2000000-0000-4000-8000-000000000001', 'food_type_kr', 'needs_check', null, null, null, '조랭이떡 식품유형을 가상 사양서와 대조', '2026-11-28T00:00:00Z'),
+  ('d5000000-0000-4000-8000-000000000006', 'component', 'd2000000-0000-4000-8000-000000000001', 'animal_ingredient', 'confirmed', null, null, null, null, '2026-11-28T00:00:00Z'),
+  ('d5000000-0000-4000-8000-000000000007', 'component', 'd2000000-0000-4000-8000-000000000001', 'ingredients', 'confirmed', null, null, null, null, '2026-11-28T00:00:00Z'),
+  ('d5000000-0000-4000-8000-000000000008', 'component', 'd2000000-0000-4000-8000-000000000001', 'nutrition_source', 'confirmed', null, null, null, null, '2026-11-28T00:00:00Z'),
+  ('d5000000-0000-4000-8000-000000000009', 'component', 'd2000000-0000-4000-8000-000000000002', 'ingredients', 'needs_check', null, null, null, '고명의 건대파와 볶은 참깨 표시 순서 확인', '2026-11-28T00:00:00Z'),
+  ('d5000000-0000-4000-8000-000000000010', 'component', 'd2000000-0000-4000-8000-000000000002', 'animal_ingredient', 'missing', 'asking_supplier', '실습용 고명 담당', '2026-11-28', null, '2026-11-28T00:00:00Z'),
+  ('d5000000-0000-4000-8000-000000000011', 'component', 'd2000000-0000-4000-8000-000000000002', 'nutrition_source', 'confirmed', null, null, null, null, '2026-11-28T00:00:00Z'),
+  ('d5000000-0000-4000-8000-000000000012', 'component', 'd2000000-0000-4000-8000-000000000003', 'ingredients', 'confirmed', null, null, null, null, '2026-11-28T00:00:00Z'),
+  ('d5000000-0000-4000-8000-000000000013', 'component', 'd2000000-0000-4000-8000-000000000003', 'animal_ingredient', 'confirmed', null, null, null, null, '2026-11-28T00:00:00Z'),
+  ('d5000000-0000-4000-8000-000000000014', 'component', 'd2000000-0000-4000-8000-000000000003', 'unit_weight_g', 'missing', null, null, null, '소스 한 포 실중량 확인 전에는 100g당 영양값 보류', '2026-11-28T00:00:00Z'),
+  ('d5000000-0000-4000-8000-000000000015', 'component', 'd2000000-0000-4000-8000-000000000003', 'nutrition_source', 'needs_check', null, null, null, '소스의 가상 영양표가 100mL 기준인지 재확인', '2026-11-28T00:00:00Z'),
+  ('d5000000-0000-4000-8000-000000000016', 'product', 'd1000000-0000-4000-8000-000000000001', 'name_en', 'confirmed', null, null, null, null, '2026-11-28T00:00:00Z');

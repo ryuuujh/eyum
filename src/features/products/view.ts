@@ -29,7 +29,7 @@ export type DetailView = {
 
 const EMPTY_TRI = '미확인';
 
-/** 묶은 칸 원값: { w: 143, d: 143, h: 98, unit: 'mm' } (모두 비어 있으면 null) */
+/** 묶은 칸 원값: { w: 150, d: 90, h: 60, unit: 'mm' } (모두 비어 있으면 null) */
 function composite_raw(src: Record<string, unknown> | null | undefined, key: string) {
   const c = COMPOSITE_FIELDS[key];
   const vals = c.cols.map((k) => (src?.[k] == null ? null : Number(src[k])));
