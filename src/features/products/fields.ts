@@ -30,7 +30,7 @@ export const REQUEST_GROUPS: Record<RequestGroup, { title: (scope: string) => st
 };
 
 export const PRODUCT_FIELDS: FieldDef[] = [
-  { key: 'name_en', label: '영문 제품명', uses: ['라벨', '서류'], request: 'package_label', hint: '예: Demo Pumpkin Soup Kit · 포장 뒷면 · 수출용 라벨에 있어요' },
+  { key: 'name_en', label: '영문 제품명', uses: ['라벨', '서류'], request: 'package_label', hint: '예: Test Tteokbokki · 포장 뒷면 · 수출용 라벨에 있어요' },
   { key: 'net_content_value', label: '총 내용량', uses: ['라벨', '서류'], request: 'package_label' },
   { key: 'storage_condition', label: '보관 조건', uses: ['규제', '라벨'], request: 'package_label', hint: '예: 상온 · 상온 / 냉장 / 냉동 중 하나, 포장의 보관 방법에 있어요' },
   { key: 'date_type', label: '기한 종류', uses: ['라벨'], request: 'package_label', hint: '소비기한 / 품질유지기한 중 하나' },

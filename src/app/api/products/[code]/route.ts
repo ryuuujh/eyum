@@ -1,5 +1,5 @@
 // [공용] 제품 하나: 칸마다 값 + 확인 상태
-// GET /api/products/demo-pumpkin-soup?for=라벨&external=1
+// GET /api/products/demo-tteokbokki?for=라벨&external=1
 //   for: 규제 | 라벨 | 서류 (없으면 전체 칸)   external=1: 내부용 칸 · 비공개 제조사 이름 빼기
 import { NextResponse } from 'next/server';
 import { USE_TABS, get_shared_product } from '@/features/products/share';

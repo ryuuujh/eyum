@@ -47,7 +47,7 @@ export function apply_change(f: ProductForm, c: Change, ai_note?: string) {
   } else if (field in f.p) (f.p as Record<string, string>)[field] = v;
 }
 
-/** "귀리(캐나다산), 호박씨, 펙틴" → 줄 목록 (괄호 안 쉼표는 나누지 않음) */
+/** "쌀가루(태국산), 기장가루(프랑스산)" → 줄 목록 (괄호 안 쉼표는 나누지 않음) */
 export function split_list(v: string): string[] {
   if (v.includes('\n')) return v.split('\n').map((x) => x.trimEnd()).filter((x) => x.trim());
   const out: string[] = []; let depth = 0; let cur = '';

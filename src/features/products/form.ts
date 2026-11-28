@@ -59,7 +59,7 @@ export const status_key = (entity: 'product' | 'component', id: string, field: s
 const s = (v: unknown) => (v == null ? '' : String(v));
 
 // ---- 원재료 한 줄 ↔ 표 ----
-// 영문 원재료명(선택)은 "귀리(캐나다산) / Oats"처럼 " / " 뒤에 적는다
+// 영문 원재료명(선택)은 "쌀가루(태국산) / Rice flour"처럼 " / " 뒤에 적는다
 export function ingredient_line(i: Pick<Ingredient, 'name' | 'origin' | 'ins_no' | 'additive_function'> & { name_en?: string | null }, opt: { en?: boolean } = {}): string {
   const head = i.name + (i.origin ? `(${i.origin})` : '') + (opt.en !== false && i.name_en ? ` / ${i.name_en}` : '');
   return [head, i.ins_no && `INS ${i.ins_no}`, i.additive_function].filter(Boolean).join(' · ');

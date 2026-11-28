@@ -67,7 +67,7 @@ ok(!r.ok, '너무 깊은 객체 차단');
   const vn = sanitize('Importer: DEMO IMPORTS, 12 Nguyen Van Linh, Ward 5, District 7, Ho Chi Minh City, Vietnam');
   ok(!/Nguyen|Ward 5|District 7|Ho Chi Minh/.test(vn.text), '베트남 주소 지움: ' + vn.text);
   ok(findLeftovers('공장: Bundang-gu 어딘가').length > 0, '지우고 남은 영문 주소 낱말은 차단');
-  ok(findLeftovers('Ingredients: Pumpkin, Oats, Coconut Cream. Keep refrigerated after opening. Country of Origin: Republic of Korea').length === 0, '영문 원재료 · 보관 문구 · 원산지는 차단하지 않음');
+  ok(findLeftovers('Ingredients: Rice flour, millet flour, roasted sesame seeds. Keep frozen until ready to cook. Made in Thailand.').length === 0, '영문 원재료 · 보관 문구 · 원산지는 차단하지 않음');
 }
 // 가린 뒤 복원 (11/27)
 {
