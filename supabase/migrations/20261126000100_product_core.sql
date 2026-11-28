@@ -67,7 +67,7 @@ create table components (
   cross_contact            text,                -- 교차접촉 알레르기
   nutrition_basis          text not null default '100g' check (nutrition_basis in ('100g', '100mL')),
   unit_weight_g            numeric check (unit_weight_g > 0),  -- mL 구성품 한 포의 실중량
-  nutrition_source         text,                -- 예: 시험성적서 · 휴먼바이오 · 2026.03.20
+  nutrition_source         text,                -- 예: 시험성적서의 발행 기관과 발행일
   created_at               timestamptz not null default now(),
   updated_at               timestamptz not null default now()
 );

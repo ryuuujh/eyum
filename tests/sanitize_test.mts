@@ -30,7 +30,7 @@ ok(r.ok, '기존 HSK(existing_classification)는 통과');
 r = prepareForAI({ item_type: 'food', fields: { description: '고춧가루 3%' } });
 ok(!r.ok, '식품 HS 입력의 % 는 차단');
 ok(findLeftovers('고춧가루(중국산) 3%', { allowPercent: true }).length === 0, '제품 자료 읽기: 라벨 표기 함량 % 는 허용');
-ok(findLeftovers('품목보고번호: 20140487270112, 바코드 8801234567890').length === 0, '품목보고번호 · 바코드는 통과');
+ok(findLeftovers('품목보고번호: 00000000000123, 바코드 8801234567890').length === 0, '품목보고번호 · 바코드는 통과');
 // --- 11/26 보완 ---
 r = prepareForAI({ item_type: 'accessory', fields: { item_name: '스티커', shape: '원형 · 지름 50mm' } });
 ok(r.ok && (r as any).fields.shape === '원형 · 지름 50mm', '부속물품 shape 칸 허용');
@@ -62,12 +62,12 @@ ok(!r.ok, '너무 깊은 객체 차단');
 
 // 영문 주소 (11/27 추가): 라벨 자료에 영어로 적힌 한국 · 베트남 주소
 {
-  const kr = sanitize('Manufactured by HYEYUM, 123, Samsung-ro, Yeongtong-gu, Suwon-si, Gyeonggi-do, Republic of Korea\nStore in a cool, dry place');
-  ok(!/Samsung|Yeongtong|Suwon|Gyeonggi/.test(kr.text) && /Store in a cool, dry place/.test(kr.text) && /HYEYUM/.test(kr.text), '영문 한국 주소 지움, 다른 문장은 그대로: ' + kr.text.replace(/\n/g, ' / '));
-  const vn = sanitize('Importer: CNI VINA, 12 Nguyen Van Linh, Ward 5, District 7, Ho Chi Minh City, Vietnam');
+  const kr = sanitize('Manufactured by DEMO FOODS, 123, Samsung-ro, Yeongtong-gu, Suwon-si, Gyeonggi-do, Republic of Korea\nKeep refrigerated after opening');
+  ok(!/Samsung|Yeongtong|Suwon|Gyeonggi/.test(kr.text) && /Keep refrigerated after opening/.test(kr.text) && /DEMO FOODS/.test(kr.text), '영문 한국 주소 지움, 다른 문장은 그대로: ' + kr.text.replace(/\n/g, ' / '));
+  const vn = sanitize('Importer: DEMO IMPORTS, 12 Nguyen Van Linh, Ward 5, District 7, Ho Chi Minh City, Vietnam');
   ok(!/Nguyen|Ward 5|District 7|Ho Chi Minh/.test(vn.text), '베트남 주소 지움: ' + vn.text);
   ok(findLeftovers('공장: Bundang-gu 어딘가').length > 0, '지우고 남은 영문 주소 낱말은 차단');
-  ok(findLeftovers('Ingredients: Rice, Salt, Tomato Powder. Store in a cool, dry place. Country of Origin: Republic of Korea').length === 0, '영문 원재료 · 보관 문구 · 원산지는 차단하지 않음');
+  ok(findLeftovers('Ingredients: Pumpkin, Oats, Coconut Cream. Keep refrigerated after opening. Country of Origin: Republic of Korea').length === 0, '영문 원재료 · 보관 문구 · 원산지는 차단하지 않음');
 }
 // 가린 뒤 복원 (11/27)
 {

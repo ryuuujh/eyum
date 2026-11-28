@@ -38,7 +38,7 @@
 
 - **요청:** 다른 탭 명세(라벨 · CI·PL · 수출신고)를 점검한 뒤 ① 제품 등록 후 다른 탭으로 넘길 제품을 체크하는 기능 ② 통로에 빠진 칸 모두 추가 ③ 숫자 원값 · 기존 라벨 문구 · 개별포장/외박스 정보도 추가.
 - **반영 파일**
-  - DB: `20261126000100_product_core.sql`에 `products.export_selected`(기본 false)와 `product_label_texts` 표 추가, `20261126000900_save_product_rpc.sql`에 라벨 문구 저장 추가(수출 체크는 등록 · 수정 저장으로 바뀌지 않음), `seed.sql`에 또떡EZ 체크 · 영어 라벨 문구 5줄(주소 항목 제외).
+  - DB: `20261126000100_product_core.sql`에 `products.export_selected`(기본 false)와 `product_label_texts` 표 추가, `20261126000900_save_product_rpc.sql`에 라벨 문구 저장 추가(수출 체크는 등록 · 수정 저장으로 바뀌지 않음), `seed.sql`에 당시 예시 제품의 수출 체크 · 영어 라벨 문구 5줄(주소 항목 제외).
   - 칸: `fields.ts`에 기한 종류 · 포장 크기 · 라벨 부착 면적(라벨), 교차접촉 알레르기(구성품, 라벨), HSK 10자리(서류, HS 찾기로만 채워져 할 일 제외) · 통화 · CTN 순중량 · 총중량 · 크기(서류) 추가. 여러 DB 칸을 묶은 칸(포장 크기 등)은 `COMPOSITE_FIELDS`.
   - 통로: `share.ts` — 칸마다 `raw`(계산용 원값), `packs`(개별포장 · 외박스 · 팔레트 숫자), `label_texts`; `GET /api/products?selected=1`.
   - 화면(임시 UI): 목록 "수출" 체크 열, 상세 "수출할 제품" 체크 · 기존 라벨 문구 표, 등록 · 수정 "표시 정보" 탭에 기존 라벨 문구 입력, 새 칸 아래 상태 안내.

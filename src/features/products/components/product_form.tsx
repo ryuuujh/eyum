@@ -194,7 +194,7 @@ export function ProductForm({ initial, hints: initialHints, library = [], initia
                   {f.comps.length > 1 && <button className="text-sm text-slate-500 hover:text-rose-600" onClick={() => setF((x) => ({ ...x, comps: x.comps.filter((_, j) => j !== i) }))}>빼기</button>}
                 </div>
                 <div className="grid gap-5 sm:grid-cols-3">
-                  <Field label="구성품 이름"><input className={input} value={c.name} placeholder="예: 떡볶이떡-S" onChange={(e) => set_c(i, { name: e.target.value })} /></Field>
+                  <Field label="구성품 이름"><input className={input} value={c.name} placeholder="예: 단호박 퓌레" onChange={(e) => set_c(i, { name: e.target.value })} /></Field>
                   <Field label="한 봉 양">
                     <div className="flex gap-2">
                       <input className={input} inputMode="decimal" value={c.amount} onChange={(e) => set_c(i, { amount: e.target.value })} />
@@ -216,7 +216,7 @@ export function ProductForm({ initial, hints: initialHints, library = [], initia
                     <Under entity="component" id={c.id} k="report_no" value={c.report_no} />
                   </Field>
                   <Field label="식품유형">
-                    <input className={input} value={c.food_type_kr} placeholder="예: 떡류" onChange={(e) => set_c(i, { food_type_kr: e.target.value })} />
+                    <input className={input} value={c.food_type_kr} placeholder="예: 곡류가공품" onChange={(e) => set_c(i, { food_type_kr: e.target.value })} />
                     <Under entity="component" id={c.id} k="food_type_kr" value={c.food_type_kr} />
                   </Field>
                   {c.unit === 'mL' ? (
@@ -226,7 +226,7 @@ export function ProductForm({ initial, hints: initialHints, library = [], initia
                     </Field>
                   ) : <div />}
                   <Field label="원재료 (한 줄에 하나, 라벨 순서대로)" span={3}>
-                    <textarea rows={4} className={`${input} font-mono`} value={c.ingredients} placeholder={'쌀(미국산) / Rice\n소금\n구연산 · INS 330 · 산도조절제'} onChange={(e) => set_c(i, { ingredients: e.target.value })} />
+                    <textarea rows={4} className={`${input} font-mono`} value={c.ingredients} placeholder={'귀리(캐나다산) / Oats\n호박씨\n펙틴 · INS 440 · 겔화제'} onChange={(e) => set_c(i, { ingredients: e.target.value })} />
                     <p className="mt-1 text-xs text-slate-500">영문 원재료명은 선택이에요. 이름 뒤에 &quot; / Rice&quot;처럼 적어요. 하위 원료는 앞에 칸을 띄우거나 &quot;-&quot;로 시작해요.</p>
                     <Under entity="component" id={c.id} k="ingredients" value={c.ingredients} />
                   </Field>
@@ -360,7 +360,7 @@ export function ProductForm({ initial, hints: initialHints, library = [], initia
                       {Object.entries(LABEL_ITEMS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                     </select>
                     <textarea rows={1} className={input} placeholder="라벨 원문" value={x.text} onChange={(e) => set_l({ text: e.target.value })} />
-                    <input className={input} placeholder="출처 (예: 영어 라벨 10.14)" value={x.source} onChange={(e) => set_l({ source: e.target.value })} />
+                    <input className={input} placeholder="출처 (예: 테스트용 영문 라벨)" value={x.source} onChange={(e) => set_l({ source: e.target.value })} />
                     <button className="px-2 text-sm text-slate-400 hover:text-rose-600" onClick={() => setF((y) => ({ ...y, labels: y.labels.filter((_, j) => j !== i) }))}>빼기</button>
                   </div>
                 );

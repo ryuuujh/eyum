@@ -16,7 +16,7 @@ export type SharedField = {
   field: string;               // DB 칸 이름 (field_status.field_key)
   doc_key: DocKey | null;      // 서류 탭 공통 이름 (제품 · 부속물품이 같음, doc_keys.ts). 서류에 안 쓰는 칸은 null
   label: string;               // 화면 이름
-  value: string | null;        // 보여 줄 값 (화면용 글자, 예: "1902.30" · "226g" · "143 × 143 × 98 mm"). 없으면 null
+  value: string | null;        // 보여 줄 값 (화면용 글자, 예: "1902.30" · "180g" · "150 × 90 × 60 mm"). 없으면 null
   raw: unknown;                // 계산용 원값 (숫자, HS는 숫자만 "190230", 묶은 칸은 { w, d, h, unit } 객체). 없으면 null
   status: FieldStatusValue;    // confirmed · needs_check · missing · on_hold · not_applicable
   status_label: string;

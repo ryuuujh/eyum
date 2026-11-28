@@ -30,7 +30,7 @@ export const REQUEST_GROUPS: Record<RequestGroup, { title: (scope: string) => st
 };
 
 export const PRODUCT_FIELDS: FieldDef[] = [
-  { key: 'name_en', label: '영문 제품명', uses: ['라벨', '서류'], request: 'package_label', hint: '예: Tteokbokki EZ · 포장 뒷면 · 수출용 라벨에 있어요' },
+  { key: 'name_en', label: '영문 제품명', uses: ['라벨', '서류'], request: 'package_label', hint: '예: Demo Pumpkin Soup Kit · 포장 뒷면 · 수출용 라벨에 있어요' },
   { key: 'net_content_value', label: '총 내용량', uses: ['라벨', '서류'], request: 'package_label' },
   { key: 'storage_condition', label: '보관 조건', uses: ['규제', '라벨'], request: 'package_label', hint: '예: 상온 · 상온 / 냉장 / 냉동 중 하나, 포장의 보관 방법에 있어요' },
   { key: 'date_type', label: '기한 종류', uses: ['라벨'], request: 'package_label', hint: '소비기한 / 품질유지기한 중 하나' },
@@ -83,7 +83,7 @@ export const form_tab_of = (entity: string, key: string): FormTab =>
   entity === 'component' ? (key === 'nutrition_source' ? 'nutrition' : 'comps')
   : EXPORT_FIELDS.some((d) => d.key === key) ? 'export' : LABEL_KEYS.has(key) ? 'label' : 'basic';
 
-/** 여러 DB 칸을 묶은 칸 (화면 · 할 일 · 통로에서는 칸 하나로 다룬다). 값은 "143 × 143 × 98" 글자, 원값은 숫자 객체 */
+/** 여러 DB 칸을 묶은 칸 (화면 · 할 일 · 통로에서는 칸 하나로 다룬다). 값은 "150 × 90 × 60" 글자, 원값은 숫자 객체 */
 export const COMPOSITE_FIELDS: Record<string, { cols: string[]; names: string[]; unit: string }> = {
   pack_size: { cols: ['pack_w_mm', 'pack_d_mm', 'pack_h_mm'], names: ['w', 'd', 'h'], unit: 'mm' },
   label_size: { cols: ['label_w_mm', 'label_h_mm'], names: ['w', 'h'], unit: 'mm' },

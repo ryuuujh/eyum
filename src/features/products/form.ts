@@ -5,7 +5,7 @@ import { NUTRIENT_KEYS, type Component, type FieldStatus, type FieldStatusValue,
 import type { PackagingPart, ProductDetail } from './data';
 import { COMPONENT_FIELDS, COMPOSITE_FIELDS, EXPORT_FIELDS, PRODUCT_FIELDS, type FieldDef } from './fields';
 
-/** 묶은 칸(포장 크기 등)의 보여 줄 값: 하나라도 있으면 "143 × 143 × 98" (빈 칸은 ?) */
+/** 묶은 칸(포장 크기 등)의 보여 줄 값: 하나라도 있으면 "150 × 90 × 60" (빈 칸은 ?) */
 export function composite_text(src: Record<string, unknown> | null | undefined, key: string): string {
   const c = COMPOSITE_FIELDS[key];
   const v = c.cols.map((k) => src?.[k]).map((x) => (x == null ? '' : String(x).trim()));
@@ -59,7 +59,7 @@ export const status_key = (entity: 'product' | 'component', id: string, field: s
 const s = (v: unknown) => (v == null ? '' : String(v));
 
 // ---- 원재료 한 줄 ↔ 표 ----
-// 영문 원재료명(선택)은 "쌀(미국산) / Rice"처럼 " / " 뒤에 적는다
+// 영문 원재료명(선택)은 "귀리(캐나다산) / Oats"처럼 " / " 뒤에 적는다
 export function ingredient_line(i: Pick<Ingredient, 'name' | 'origin' | 'ins_no' | 'additive_function'> & { name_en?: string | null }, opt: { en?: boolean } = {}): string {
   const head = i.name + (i.origin ? `(${i.origin})` : '') + (opt.en !== false && i.name_en ? ` / ${i.name_en}` : '');
   return [head, i.ins_no && `INS ${i.ins_no}`, i.additive_function].filter(Boolean).join(' · ');

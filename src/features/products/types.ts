@@ -152,6 +152,6 @@ export interface LabelText {
   pack_level: LabelPackLevel;
   item_key: LabelItemKey;
   text: string;              // 라벨 원문 그대로
-  source: string | null;     // 어느 라벨에서 옮겼는지 (예: 영어 라벨 10.14)
+  source: string | null;     // 어느 라벨에서 옮겼는지 (예: 테스트용 영문 라벨)
   sort_order: number;
 }
